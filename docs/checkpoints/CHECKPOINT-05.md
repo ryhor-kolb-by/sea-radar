@@ -1,9 +1,9 @@
-# Checkpoint 05 — Независимая приёмка данных и движения
+# Checkpoint 05 — Independent Acceptance of Data and Movement
 
-**Архив:** `sea-radar-checkpoint-checkpoint-<sha>.zip`, где sha — коммит, в который входит эта запись
-**Дата:** 2026-09-25  **Задачи:** B-14…B-17
+**Archive:** `sea-radar-checkpoint-checkpoint-<sha>.zip`, where sha is the commit that includes this entry
+**Date:** 2026-09-25  **Tasks:** B-14…B-17
 
-## Запуск
+## Run
 
 ```bash
 npm install
@@ -12,42 +12,42 @@ npm run build
 npm start
 ```
 
-## Что сделано
+## Completed
 
-- Сохранённый образец и синтетические варианты проверяются тестами преобразователя: поля судна, нормализация имени, нулевая и недопустимая скорость, недопустимый курс, координаты, MMSI и время.
-- Сборщик проверяется с синтетическим источником событий и управляемыми часами: дедупликация, выбор более свежей позиции, равные метки, лимит 100, окончание окна, ошибки соединения и провайдера, разрыв, отмена, целостная замена судна и `collectedAt`.
-- Автоматические браузерные проверки охватывают движение демонстрационного судна, обновление карточки координатами, остановку в конце маршрута, а также ошибки, пустой снимок и отсутствие скорости и курса в R2.
-- Независимый просмотр кода и результатов: не выполнялся в этой сессии. Независимые findings не получены.
-- Решение о приёмке: принято.
+- The saved sample and synthetic variants are checked by converter tests: vessel fields, name normalization, zero and invalid speed, invalid course, coordinates, MMSI, and time.
+- The collector is checked with a synthetic event source and controlled clock: deduplication, selection of a newer position, equal timestamps, limit of 100, window expiration, connection and provider errors, disconnect, cancellation, atomic vessel replacement, and `collectedAt`.
+- Automated browser checks cover demonstration vessel movement, updating the card with coordinates, stopping at the end of the route, as well as errors, an empty snapshot, and missing speed and course in R2.
+- Independent code and results review: not performed in this session. No independent findings were obtained.
+- Acceptance decision: accepted.
 
-## Проверки
+## Checks
 
 - `npm test` → passed 36, failed 0.
-- `npm run build` → успешно: production-сборка Next.js 16.3.4; TypeScript завершился без ошибок; `/api/snapshot` собран как dynamic server-rendered route.
-- Автоматический браузерный тест: движение и остановка демонстрационного судна, обновление карточки; состояния ошибки, пустого снимка и судна без скорости/курса → все соответствующие тесты прошли.
-- Автоматические node-тесты преобразователя и сборщика с синтетическими данными, без WebSocket → все соответствующие тесты прошли.
-- Ручная проверка: в этой сессии не выполнялась.
-- Визуально, без автоматического теста: отдельный визуальный просмотр не выполнялся.
+- `npm run build` → successful: Next.js 16.3.4 production build; TypeScript completed without errors; `/api/snapshot` was built as a dynamic server-rendered route.
+- Automated browser test: demonstration vessel movement and stopping, card update; error and empty snapshot states and vessel without speed/course → all corresponding tests passed.
+- Automated node tests of converter and collector with synthetic data, without WebSocket → all corresponding tests passed.
+- Manual check: not performed in this session.
+- Visual, without an automated test: no separate visual review was performed.
 
-## Живое подключение к AISStream
+## Live AISStream connection
 
-не проверялось
+not checked
 
-## Что осталось за рамками
+## Out of scope
 
-- Живое подключение к AISStream и получение реальных данных не проверялись; тесты сборщика используют синтетический источник и не доказывают доступность провайдера.
-- Независимый просмотр по процедуре B-17 в свежей сессии без права на правки не выполнялся; независимых findings и рекомендации независимого рецензента нет.
-- Ручная и отдельная визуальная проверка приложения в браузере в этом занятии не выполнялись.
+- Live AISStream connection and retrieval of real data were not checked; collector tests use a synthetic source and do not prove provider availability.
+- Independent review under B-17 procedure in a fresh session without editing permission was not performed; there are no independent findings or recommendations from an independent reviewer.
+- Manual and separate visual checks of the application in a browser were not performed in this session.
 
-## Отклонения от задания
+## Deviations from the brief
 
-- Независимый просмотр B-17 → вместо него выполнены автоматические проверки и локальная запись их результатов → независимая сессия в этой работе не запускалась.
-- Влияет на невыданные задания: нет.
+- Independent B-17 review → automated checks and a local record of their results were performed instead → no independent session was started for this work.
+- Affects unissued tasks: no.
 
-## Открытые вопросы
+## Open questions
 
-- Нет.
+- None.
 
-## Ближайший шаг
+## Next step
 
-Сверить эту запись с принятым коммитом и архивом checkpoint 05.
+Reconcile this entry with the accepted commit and checkpoint 05 archive.

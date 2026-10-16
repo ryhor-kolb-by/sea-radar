@@ -1,22 +1,23 @@
 /**
- * Чтение ключа AISStream. Модуль серверный: он читает `process.env`, и попасть
- * в клиентский бандл не должен — имя переменной без префикса `NEXT_PUBLIC_`
- * Next.js в браузер не отдаёт, но полагаться только на это мало, поэтому модуль
- * импортируется исключительно из кода маршрута.
+ * Reads the AISStream key. This module is server-only: it reads `process.env`
+ * and must never end up in the client bundle. Next.js doesn't expose a variable
+ * name without the `NEXT_PUBLIC_` prefix to the browser, but relying on that
+ * alone isn't enough, so the module is imported only from route code.
  *
- * Значение ключа наружу отдаётся ровно одному месту — отправке подписки. Оно не
- * логируется, не попадает в ответ и не подставляется в сообщения об ошибках.
+ * The key value is exposed to exactly one place — sending the subscription. It
+ * is never logged, never included in a response, and never interpolated into
+ * error messages.
  */
 
-/** Отсутствие ключа — обычный исход, а не исключение: его обрабатывает маршрут. */
+/** Missing key is a normal outcome, not an exception: the route handles it. */
 export type ApiKeyResult =
   | { readonly ok: true; readonly key: string }
   | { readonly ok: false };
 
 /**
- * Ключ из окружения. Пустая строка и строка из пробелов — это не ключ, а его
- * отсутствие: `.env.example` содержит `AISSTREAM_API_KEY=` без значения, и такой
- * файл не должен выглядеть как настроенный ключ.
+ * Key from the environment. An empty string or a string of only whitespace is
+ * not a key but its absence: `.env.example` contains `AISSTREAM_API_KEY=` with
+ * no value, and that file must not look like a configured key.
  */
 export function readApiKey(): ApiKeyResult {
   const raw = process.env.AISSTREAM_API_KEY;

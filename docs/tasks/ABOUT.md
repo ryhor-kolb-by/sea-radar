@@ -1,57 +1,57 @@
-# Финальный блок: как он устроен
+# Final Block: How It Is Structured
 
-Последние три недели курса — шесть вебинаров, на которых мы вместе разрабатываем один проект с нуля через Claude Code. Проект — Sea Radar, локальное веб-приложение для просмотра судов в проливе; задание от заказчика лежит рядом, в `PROJECT_BRIEF.md`, — можете заглянуть в него заранее, дальше всё вертится вокруг него.
+The final three weeks of the course consist of six webinars, during which we develop one project together from scratch using Claude Code. The project is Sea Radar, a local web application for viewing vessels in the strait; the client brief is nearby, in `PROJECT_BRIEF.md`—you can take a look at it in advance; everything from here revolves around it.
 
-## Что происходит на вебинаре
+## What Happens During the Webinar
 
-Начинаем с пустой папки — живой репозиторий, реальный агент, никаких слайдов. Дальше вы видите весь путь целиком: как я читаю задачу, что исследую до первой правки, как ограничиваю шаг для агента, чем проверяю результат, как читаю diff и что решаю — принять, вернуть на доработку или остановиться.
+We start with an empty folder—a live repository, a real agent, no slides. Then you see the entire process: how I read the task, what I investigate before the first edit, how I limit the agent's step, how I check the result, how I read the diff, and what I decide—accept it, return it for revision, or stop.
 
-Вы наблюдаете, задаёте вопросы и участвуете в обсуждении решений. Синхронно писать код не нужно. Домашней работы между вебинарами нет.
+You observe, ask questions, and take part in discussing decisions. You do not need to write code in sync. There is no homework between webinars.
 
-Шесть вебинаров по 120 минут:
+Six webinars, 120 minutes each:
 
-1. Из пустой папки — к первому судну
-2. Радар оживает
-3. Первое настоящее сообщение
-4. Настоящие суда на карте
-5. Независимая приёмка
-6. Финал 
-
-
-## Какие файлы вы получаете
-
-Работа над проектом разбита на три спринта — по спринту на неделю, два вебинара в каждом. Файл спринта я показываю на экране на том вебинаре, где мы берёмся за его задачи, а сам файл присылаю вам после вебинара — чтобы вы могли перечитать его спокойно.
-
-**Перед первым вебинаром** — `PROJECT_BRIEF.md` (задание заказчика с пользовательскими историями): с него всё начинается, и он у вас на руках с самого начала.
-
-**Файлы спринтов:** `SPRINT-01.md` — на первом вебинаре, `SPRINT-02.md` — на третьем, `SPRINT-03.md` — на пятом, `SPRINT-03b-CHANGE-REQUEST.md` — на шестом.
-
-Да, файлы приходят частями, и это специально: решения на вебинаре принимаются без знания будущих требований — ровно как в настоящей разработке. Спрашивать «а что будет дальше» можно, но до срока я не отвечу. Те же файлы лежат в репозитории проекта в `docs/tasks/` — агент читает их оттуда; шаблон записи checkpoint — в `docs/checkpoints/TEMPLATE.md`.
-
-Работа разбита на четыре релиза R1–R4 — версии, которые заказчик может запустить и посмотреть своими глазами; спринты 1 и 2 дают по релизу, спринт 3 — сразу два. Задачи внутри релизов пронумерованы B-01…B-21: по этим номерам их удобно находить в файлах спринтов.
-
-Каждый файл спринта состоит из двух частей. **«Что делаем»** — задачи из backlog проекта с критериями приёмки: то, что должно получиться к концу недели. **«Как делаем с Claude Code»** — метод работы на этих задачах: порядок, границы, ловушки, примеры запросов агенту. Первая часть отвечает на вопрос «что нужно получить», вторая — «как к этому идти». Путь не один; на вебинаре мы пройдём его одним конкретным маршрутом.
-
-## Что остаётся после вебинара
-
-Checkpoint — принятое состояние проекта в конце вебинара. Публикую его в двух видах:
-
-- **архив принятого состояния репозитория** — `sea-radar-checkpoint-0N-<sha>.zip`;
-- **запись checkpoint** — страница: что сделано, какие проверки выполнены и с каким результатом, статус подключения к источнику данных, что осталось за рамками, какие отклонения от задания приняты и почему, с чего начнётся следующий вебинар.
+1. From an Empty Folder to the First Vessel
+2. The Radar Comes to Life
+3. The First Real Message
+4. Real Vessels on the Map
+5. Independent Acceptance
+6. Final
 
 
-## Как пользоваться checkpoint
+## What Files You Receive
 
-Архив — это файлы проекта без истории Git. Распакуйте его, выполните команды из раздела «Запуск» записи checkpoint — и у вас на экране то же состояние, что было у меня в конце вебинара. Дальше — на ваш вкус:
+The project is divided into three sprints—one sprint per week, with two webinars in each. I show the sprint file on screen during the webinar where we take on its tasks, and send you the file after the webinar so that you can reread it at your leisure.
 
-- повторить путь вебинара в своей копии по части «Как делаем» файла спринта;
-- закончить то, что я сократил на вебинаре (раздел «Что осталось за рамками» записи);
-- сделать то же самое иначе и сравнить — по-моему, это самое интересное;
-- распаковать два соседних checkpoint и попросить свежую сессию Claude Code сравнить папки и назвать, что в изменениях не проверено;
-- взять задание из раздела «Nice to have» в конце файла спринта.
+**Before the first webinar** — `PROJECT_BRIEF.md` (the client brief with user stories): everything starts here, and you have it from the very beginning.
 
-Всё это — по желанию. Не проверяется, не оценивается и не является условием следующего вебинара. Индивидуального итогового проекта и защиты в этом блоке нет.
+**Sprint files:** `SPRINT-01.md`—at the first webinar, `SPRINT-02.md`—at the third, `SPRINT-03.md`—at the fifth, `SPRINT-03b-CHANGE-REQUEST.md`—at the sixth.
 
-## Что понадобится, если решите повторять
+Yes, the files arrive in installments, and that's intentional: decisions during the webinar are made without knowing future requirements—just as in real development. You can ask “what happens next,” but I won't answer before the time comes. The same files are in the project repository under `docs/tasks/`—the agent reads them from there; the checkpoint entry template is in `docs/checkpoints/TEMPLATE.md`.
 
-Node.js 24, Git, Claude Code CLI, браузер. Для настоящих данных — свой бесплатный ключ AISStream aisstream.io; без ключа работает демонстрационная часть, так что начать можно и без него. Мой ключ не передаётся.
+The work is divided into four releases, R1–R4—versions that the client can run and see for themselves; sprints 1 and 2 each produce one release, while sprint 3 produces two. Tasks within releases are numbered B-01…B-21: these numbers make them easy to find in the sprint files.
+
+Each sprint file consists of two parts. **“What We’re Doing”**—tasks from the project backlog with acceptance criteria: what should be achieved by the end of the week. **“How We Work with Claude Code”**—the method for working on those tasks: sequence, boundaries, pitfalls, and examples of requests to the agent. The first part answers the question “what needs to be delivered,” the second “how to get there.” There isn't just one path; during the webinar, we'll follow one specific route.
+
+## What Remains After the Webinar
+
+A checkpoint is the accepted state of the project at the end of the webinar. I publish it in two forms:
+
+- **archive of the accepted repository state** — `sea-radar-checkpoint-0N-<sha>.zip`;
+- **checkpoint entry** — a page describing what was done, which checks were performed and with what results, the status of the data-source connection, what remains out of scope, which deviations from the brief were accepted and why, and how the next webinar will begin.
+
+
+## How to Use a Checkpoint
+
+The archive contains the project files without Git history. Unpack it, run the commands in the “Running” section of the checkpoint entry, and you will see on your screen the same state I had at the end of the webinar. From there, it's up to you:
+
+- repeat the webinar's path in your own copy using the “How We Work” part of the sprint file;
+- finish what I shortened during the webinar (the “What Remains Out of Scope” section of the entry);
+- do the same thing differently and compare—in my opinion, this is the most interesting option;
+- unpack two neighboring checkpoints and ask a fresh Claude Code session to compare the folders and identify what hasn't been checked in the changes;
+- take a task from the “Nice to have” section at the end of the sprint file.
+
+All of this is optional. It is not checked, graded, or a requirement for the next webinar. There is no individual final project or defense in this block.
+
+## What You’ll Need If You Decide to Follow Along
+
+Node.js 24, Git, Claude Code CLI, and a browser. For real data, you need your own free AISStream key from aisstream.io; the demo part works without a key, so you can start without one. My key is not shared.

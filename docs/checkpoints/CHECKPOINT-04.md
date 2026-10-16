@@ -1,9 +1,9 @@
-# Checkpoint 04 — Снимок настоящих позиций на карте
+# Checkpoint 04 — Snapshot of Real Positions on the Map
 
-**Архив:** `sea-radar-checkpoint-04-<sha>.zip`, где sha — коммит, в который входит эта запись
-**Дата:** 2026-09-21  **Задачи:** B-11…B-13
+**Archive:** `sea-radar-checkpoint-04-<sha>.zip`, where sha is the commit that includes this entry
+**Date:** 2026-09-21  **Tasks:** B-11…B-13
 
-## Запуск
+## Run
 
 ```bash
 npm run build
@@ -11,44 +11,44 @@ npm test
 npm start -- -p 3001
 ```
 
-## Что сделано
+## Completed
 
-- `GET /api/snapshot` собирает до 100 уникальных судов за конфигурационное окно 15 секунд, выбирает последнюю позицию по времени сообщения и возвращает метаданные снимка.
-- В интерфейсе появилась кнопка «Загрузить настоящие позиции» и состояния `idle-demo`, `loading`, `success`, `empty`, `error`.
-- В состоянии `loading` демонстрационный таймер снимается, суда, выбор и карточка очищаются, базовая карта остаётся, кнопка блокируется.
-- Успешный ответ показывает AIS-суда существующими значками и существующей карточкой; наборы между загрузками не объединяются.
-- Подписи успеха используют `windowSeconds` и `collectedAt` из ответа; ошибки используют сообщение из тела ответа.
-- Первый непустой успешный снимок сбрасывает вид карты к начальному, последующие загрузки вид карты не сбрасывают.
-- Маркеры, отсутствующие в новом массиве судов, удаляются из карты.
+- `GET /api/snapshot` collects up to 100 unique vessels during a configurable 15-second window, selects the latest position by message time, and returns snapshot metadata.
+- The interface now has a “Load real positions” button and the states `idle-demo`, `loading`, `success`, `empty`, `error`.
+- In the `loading` state, the demonstration timer is cleared, vessels, selection, and card are cleared, the base map remains, and the button is disabled.
+- A successful response displays AIS vessels using the existing icons and existing card; results from separate loads are not merged.
+- Success labels use `windowSeconds` and `collectedAt` from the response; errors use the message from the response body.
+- The first non-empty successful snapshot resets the map view to the initial view; subsequent loads do not reset the map view.
+- Markers absent from the new vessel array are removed from the map.
 
-## Проверки
+## Checks
 
-- `npm run build` → успешно: production-сборка Next.js завершилась без ошибок, маршрут `/api/snapshot` остался dynamic Node route.
+- `npm run build` → successful: Next.js production build completed without errors; `/api/snapshot` remained a dynamic Node route.
 - `npm test` → passed 3, failed 0.
-- Одноразовый браузерный сценарий Playwright → после нажатия кнопки показана `Загрузка…`, кнопка была disabled; после ответа показана подпись `AISStream · снимок за 15 с · получен 17:22:35 UTC · судов: 4 · выборка неполная`; найдено 4 судна, клик по `224029000` открыл одну карточку с тем же id.
-- Ручная проверка: не выполнялась.
-- Визуально, без автоматического теста: просмотрен снимок экрана после загрузки; на карте видны четыре AIS-значка, в панели — кнопка, серверная подпись и карточка выбранного судна.
+- One-off Playwright browser scenario → after clicking the button, `Loading…` was shown and the button was disabled; after the response, the label read `AISStream · snapshot for 15 s · received 17:22:35 UTC · vessels: 4 · sample incomplete`; 4 vessels were found; clicking `224029000` opened one card with the same id.
+- Manual check: not performed.
+- Visual, without an automated test: a screenshot after loading was reviewed; four AIS icons were visible on the map, and the panel showed the button, server label, and selected vessel card.
 
-## Живое подключение к AISStream
+## Live AISStream connection
 
-успешно 17:22:35 UTC, судов: 4 за 15 с
+successful at 17:22:35 UTC, vessels: 4 in 15 s
 
-## Что осталось за рамками
+## Out of scope
 
-- Отдельно не проверены ветки `empty`, `error` и `limit_reached`/`truncated: true` через интерфейс.
-- Отдельно не проверено сохранение пользовательского вида карты при второй загрузке и неподвижность AIS-судов во времени.
-- Тесты для новых состояний B-13 не добавлялись; проверены только существующие тесты B-07.
-- Отдельные управляемые проверки всех ошибочных исходов сборщика B-12 и поздних событий не выполнялись.
+- The `empty`, `error`, and `limit_reached`/`truncated: true` branches were not separately checked through the interface.
+- Preservation of a user-adjusted map view on the second load and AIS vessel immobility over time were not separately checked.
+- No tests were added for the new B-13 states; only the existing B-07 tests were checked.
+- Separate controlled checks of all error outcomes from the B-12 collector and late events were not performed.
 
-## Отклонения от задания
+## Deviations from the brief
 
-- Production-сборка → дополнительно убран суффикс `.ts` из импорта в `scripts/check-parser.ts` → исходный `npm run build` завершался ошибкой TS5097 до проверки B-13; поведение приложения не изменено.
-- Влияет на невыданные задания: нет.
+- Production build → additionally removed the `.ts` suffix from the import in `scripts/check-parser.ts` → the original `npm run build` ended with TS5097 before checking B-13; application behavior was not changed.
+- Affects unissued tasks: no.
 
-## Открытые вопросы
+## Open questions
 
-- Нет.
+- None.
 
-## Ближайший шаг
+## Next step
 
-Начать следующее занятие с отдельной проверки сценариев пустого ответа, ошибки, остановки на лимите и повторной загрузки без сброса вида карты.
+Start the next session with separate checks for empty response, error, stopping at the limit, and repeated loading without resetting the map view.

@@ -1,9 +1,9 @@
-# Checkpoint 03 — Серверный снимок AISStream и образец сообщения
+# Checkpoint 03 — AISStream Server Snapshot and Sample Message
 
-**Архив:** `sea-radar-checkpoint-03-<sha>.zip`, где sha — коммит, в который входит эта запись
-**Дата:** 2026-09-17  **Задачи:** B-08…B-10
+**Archive:** `sea-radar-checkpoint-03-<sha>.zip`, where sha is the commit that includes this entry
+**Date:** 2026-09-17  **Tasks:** B-08…B-10
 
-## Запуск
+## Run
 
 ```bash
 npm install
@@ -12,45 +12,45 @@ npm run build
 npm start
 ```
 
-## Что сделано
+## Completed
 
-- `GET /api/snapshot` размещён в серверном Route Handler и использует Node runtime.
-- При отсутствии `AISSTREAM_API_KEY` запрос не открывает соединение и возвращает HTTP 502 с кодом `no_api_key` и сообщением «Ключ AISStream не настроен».
-- При наличии ключа серверный reader формирует подписку AISStream с районом Дувр и фильтром `PositionReport`, принимает первое сообщение без преобразования и поддерживает результат `raw: null` при истечении окна без сообщения.
-- Ошибки ответа используют фиксированные коды и сообщения без сырого текста исключений или ошибок провайдера.
-- Добавлены `.env.example`, правило игнорирования `.env.local` и проектные правила запрета чтения секретных env-файлов.
-- Сохранён синтетический образец PositionReport в исходной структуре без преобразования в структуру судна.
-- Для образца записан provenance с временем UTC, районом подписки, причиной отсутствия живого сообщения и сравнением с описанием структуры AISStream.
+- `GET /api/snapshot` is implemented in a server Route Handler and uses the Node runtime.
+- When `AISSTREAM_API_KEY` is absent, the request does not open a connection and returns HTTP 502 with code `no_api_key` and message “AISStream key is not configured”.
+- When the key is present, the server reader forms an AISStream subscription for the Dover area with the `PositionReport` filter, accepts the first message without transformation, and supports a result of `raw: null` if the time window expires without a message.
+- Error responses use fixed codes and messages without raw exception text or provider errors.
+- Added `.env.example`, a rule to ignore `.env`, and project rules prohibiting reading secret env files.
+- A synthetic PositionReport sample is saved in its original structure without conversion to a vessel structure.
+- Provenance was recorded for the sample, including UTC time, subscription area, reason for the absence of a live message, and a comparison with the AISStream structure description.
 
-## Проверки
+## Checks
 
-- `npm run build` → успешно: Next.js собрал приложение, Route Handler `/api/snapshot` найден как dynamic server-rendered route.
-- Локальный запрос `GET http://localhost:3001/api/snapshot` к изолированному production-серверу без env-файлов → HTTP 502, `code: "no_api_key"`, сообщение «Ключ AISStream не настроен».
-- Локальный скрипт разбора JSON образца → успешно: исходные имена полей и вложенность сохранены.
-- Статический поиск по исходникам → ключ читается только в `src/server/aisstream.ts`, клиентские компоненты не содержат обращения к нему, логирование ключа отсутствует.
-- Ручная проверка: исходники демонстрационной части (`src/config.ts`, `src/demo.ts`, `src/components/RadarView.tsx`, карта и карточка) не изменялись в ходе занятия.
-- Визуально, без автоматического теста: движение демонстрационных судов в этом занятии не проверялось.
+- `npm run build` → successful: Next.js built the application; Route Handler `/api/snapshot` was identified as a dynamic server-rendered route.
+- Local `GET http://localhost:3001/api/snapshot` request to an isolated production server without env files → HTTP 502, `code: "no_api_key"`, message “AISStream key is not configured”.
+- Local script parsing the sample JSON → successful: original field names and nesting were preserved.
+- Static search of source → the key is read only in `src/server/aisstream.ts`, client components do not reference it, and the key is not logged.
+- Manual check: source files for the demonstration part (`src/config.ts`, `src/demo.ts`, `src/components/RadarView.tsx`, map, and card) were not changed during the session.
+- Visual, without an automated test: movement of the demonstration vessels was not checked during this session.
 
-## Живое подключение к AISStream
+## Live AISStream connection
 
-не проверялось: ключ отсутствует, поэтому соединение и получение живого сообщения не выполнялись
+not checked: the key is absent, so no connection or live-message retrieval was performed
 
-## Что осталось за рамками
+## Out of scope
 
-- Реальное подключение к AISStream и получение живого сообщения не выполнены из-за отсутствия ключа.
-- Сбор нескольких сообщений, ограничение до 100 судов, выбор самой новой позиции и преобразование PositionReport в структуру судна не делались — это следующие задачи.
-- Демонстрационная часть не запускалась и визуально в этом занятии не проверялась; проверены только сохранность её исходников и отсутствие изменений.
-- Поведение reader-а при успешном открытии WebSocket, `raw: null` после 15 секунд, сообщении провайдера, разрыве соединения и отмене запроса отдельно не проверялось.
+- A real connection to AISStream and retrieval of a live message were not performed because the key was unavailable.
+- Collecting multiple messages, limiting to 100 vessels, selecting the newest position, and converting PositionReport to the vessel structure were not done — these are the next tasks.
+- The demonstration part was not run or visually checked during this session; only preservation of its source files and absence of changes were checked.
+- Reader behavior on successfully opening a WebSocket, `raw: null` after 15 seconds, a provider message, connection drop, and request cancellation was not checked separately.
 
-## Отклонения от задания
+## Deviations from the brief
 
-- Отклонений нет.
-- Влияет на невыданные задания: нет.
+- No deviations.
+- Affects unissued tasks: no.
 
-## Открытые вопросы
+## Open questions
 
-- Для живой проверки B-09 и получения настоящего образца нужен ключ AISStream, передаваемый вне чата и не записываемый в репозиторий.
+- A key is needed for live verification of B-09 and retrieval of a real sample. It must be provided outside the chat and not recorded in the repository.
 
-## Ближайший шаг
+## Next step
 
-Начать следующее занятие с чтения сохранённого сырого образца и реализации преобразователя PositionReport в структуру судна.
+Start the next session by reading the saved raw sample and implementing a converter from PositionReport to the vessel structure.

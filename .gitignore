@@ -38,10 +38,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files: настоящий ключ AISStream живёт в .env.local и в репозиторий не попадает.
-# .env.example — исключение: он пустой шаблон и должен быть в репозитории.
+# env files: the real AISStream key lives in .env and never enters the repo.
+# .env.example is the exception: it's an empty template and should be committed.
 .env*
-.env.local
 !.env.example
 
 # vercel

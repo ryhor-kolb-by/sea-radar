@@ -1,61 +1,60 @@
-# Checkpoint 01 — Карта района и демонстрационное судно с карточкой
+# Checkpoint 01 — Dover Strait Map and Demonstration Vessel with Card
 
-**Архив:** `sea-radar-checkpoint-01-<sha>.zip`, где sha — коммит, в который входит эта запись
-**Дата:** 2026-09-10  **Задачи:** B-01…B-04
+**Archive:** `sea-radar-checkpoint-01-<sha>.zip`, where sha is the commit that includes this entry
+**Date:** 2026-09-10  **Tasks:** B-01…B-04
 
-## Запуск
+## Run
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
 ```
 
-## Что сделано
+## Completed
 
-- Карта пролива Дувр открывается по прямому адресу `http://localhost:3000`; район и начальный вид (центр 51.00° N, 1.45° E, zoom 10) берутся из `src/config.ts`.
-- Слой OpenStreetMap Standard с атрибуцией «© OpenStreetMap contributors» виден на карте.
-- Leaflet подключён только на клиенте: `LeafletMap` загружается через `next/dynamic` с `ssr: false`.
-- На карте одно демонстрационное судно `demo-1` внутри района; значок ориентирован по `courseDeg`, при `null` предусмотрен нейтральный круглый.
-- Значок несёт атрибуты `data-vessel-id` и `data-icon="course"|"neutral"`.
-- Клик по судну открывает карточку: идентификатор, название, координаты `toFixed(5)`, скорость с суффиксом «уз», курс в градусах, время «HH:MM:SS UTC», источник. Неизвестное значение — «Нет данных».
-- Кнопки закрытия у карточки нет; повторный клик по судну и клик по карте выбор не меняют.
-- Название выводится текстовым узлом React, не как HTML.
-- Панель сверху вниз: подпись источника «Демонстрационные данные», затем карточка.
-- Репозиторий с `.gitignore` для Node/Next, lock-файл, `CLAUDE.md` со стеком, командами, границами недели и правилом о секретах.
+- The Dover Strait map opens at the direct URL `http://localhost:3000`; the area and initial view (center 51.00° N, 1.45° E, zoom 10) are taken from `src/config.ts`.
+- The OpenStreetMap Standard layer with attribution “© OpenStreetMap contributors” is visible on the map.
+- Leaflet is connected only on the client: `LeafletMap` is loaded through `next/dynamic` with `ssr: false`.
+- There is one demonstration vessel, `demo-1`, inside the area; its icon is oriented by `courseDeg`, with a neutral round icon provided when it is `null`.
+- The icon carries the `data-vessel-id` and `data-icon="course"|"neutral"` attributes.
+- Clicking a vessel opens a card: identifier, name, coordinates via `toFixed(5)`, speed with the “kn” suffix, course in degrees, time in “HH:MM:SS UTC” format, and source. An unknown value is shown as “No data”.
+- The card has no close button; clicking the vessel again or clicking the map does not change the selection.
+- Panel order, top to bottom: source label “Demonstration data”, then the card.
+- Repository with `.gitignore` for Node/Next, lock file, and `CLAUDE.md` with the stack, commands, weekly scope, and secrets rule.
 
-## Проверки
+## Checks
 
-- `npm run build` → успешно: TypeScript без ошибок, 3 статические страницы. Это и есть проверка, что Leaflet не исполняется при серверном рендеринге.
-- `curl http://localhost:3000/` → HTTP 200; в серверном HTML нет ни одного `data-vessel-id` и нет контейнера карты — разметка карты и значков собирается только в браузере.
-- Ручная проверка: карта открыта в браузере, район пролива Дувр отрисован, атрибуция OSM видна; обновление страницы и изменение размера окна карту не ломают.
-- Ручная проверка: демонстрационное судно видно внутри района, значок повёрнут по курсу.
-- Ручная проверка: клик по судну открывает карточку с его `id`; повторный клик её не закрывает.
-- Ручная проверка: имя `<b>Демо</b>` временной правкой конфигурации показано символами, а не жирным; правка не коммитится.
-- Визуально, без автоматического теста: все четыре ручные проверки выше. Раннера тестов на этом checkpoint нет вовсе — автоматически не проверено ничего.
-- Версии: Node.js v22.16.0, npm 10.9.2. Прямые зависимости из lock-файла: next 16.3.4, react 19.2.8, react-dom 19.2.8, leaflet 1.9.4, typescript 6.0.3, @types/leaflet 1.9.22, @types/node 24.13.4, @types/react 19.3.0, @types/react-dom 19.3.0.
+- `npm run build` → successful: TypeScript without errors, 3 static pages. This also verifies that Leaflet does not execute during server rendering.
+- `curl http://localhost:3000/` → HTTP 200; server HTML contains no `data-vessel-id` and no map container — map and icon markup is built only in the browser.
+- Manual check: the map opened in a browser, the Dover Strait area rendered, and OSM attribution was visible; refreshing the page and resizing the window did not break the map.
+- Manual check: the demonstration vessel was visible inside the area, and its icon was rotated according to its course.
+- Manual check: clicking the vessel opened a card with its `id`; clicking it again did not close the card.
+- Manual check: the name `<b>Demo</b>` was displayed as characters, not bold, after a temporary configuration edit; the edit was not committed.
+- Visual, without an automated test: all four manual checks above. There is no test runner at all in this checkpoint — nothing was checked automatically.
+- Versions: Node.js v22.16.0, npm 10.9.2. Direct dependencies from the lock file: next 16.3.4, react 19.2.8, react-dom 19.2.8, leaflet 1.9.4, typescript 6.0.3, @types/leaflet 1.9.22, @types/node 24.13.4, @types/react 19.3.0, @types/react-dom 19.3.0.
 
-## Живое подключение к AISStream
+## Live AISStream connection
 
-не проверялось
+not checked
 
-## Что осталось за рамками
+## Out of scope
 
-- B-05…B-07 не делались: судно одно, а не три; маршрутов, тика `DEMO_TICK_MS` и движения нет; раннера Playwright и тестов выбора нет.
-- Ветка «Нет данных» не проверена ни глазами, ни тестом: у `demo-1` заполнены и `name`, и `speedKnots`, и `courseDeg`, поэтому `null` ни разу не отрисовывался.
-- Нейтральный круглый значок написан, но не показывался: судна с `courseDeg: null` в конфигурации нет.
-- Формат скорости `0 уз` и отличие нуля от «Нет данных» на экране не проверялись — значение скорости у `demo-1` равно 12.3.
-- Поведение при изменении размера окна проверено глазами, автоматической проверки нет.
+- B-05…B-07 were not done: there is one vessel, not three; no routes, `DEMO_TICK_MS` tick, or movement; no Playwright runner or selection tests.
+- The “No data” path was not checked visually or by test: `demo-1` has `name`, `speedKnots`, and `courseDeg` populated, so `null` was never rendered.
+- The neutral round icon was implemented but not displayed: there is no vessel with `courseDeg: null` in the configuration.
+- The `0 kn` speed format and distinction between zero and “No data” were not checked on screen — `demo-1` has speed 12.3.
+- Window-resize behavior was checked visually; there is no automated check.
 
-## Отклонения от задания
+## Deviations from the brief
 
-- Отклонений нет.
-- Влияет на невыданные задания: нет.
+- No deviations.
+- Affects unissued tasks: no.
 
-## Открытые вопросы
+## Open questions
 
-- У карты задан `maxBounds` по границам района: панорамирование за пределы прямоугольника ограничено. Задание такого ограничения не требовало и не запрещало — нужно подтвердить у заказчика.
-- `timestamp` у `demo-1` — литерал фиксированной даты. По заданию время шага берётся из реального времени браузера, но это часть B-06, которая ещё не делалась.
+- The map has `maxBounds` set to the area boundaries: panning beyond the rectangle is restricted. The brief neither required nor prohibited this restriction — customer confirmation is needed.
+- `demo-1`'s `timestamp` is a fixed-date literal. The brief says the step time is taken from the browser's real time, but this is part of B-06, which has not been done yet.
 
-## Ближайший шаг
+## Next step
 
-B-05: развернуть `DEMO_VESSELS` до `demo-1`…`demo-3` с маршрутами по 8–12 точек и скоростью каждого литералами.
+B-05: expand `DEMO_VESSELS` to `demo-1`…`demo-3` with routes of 8–12 points and literal speeds for each.

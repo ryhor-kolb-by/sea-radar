@@ -1,56 +1,56 @@
-# Шаблон записи checkpoint
+# Checkpoint Entry Template
 
-Файл `docs/checkpoints/CHECKPOINT-0N.md` в репозитории проекта. Шаблон лежит в репозитории как `docs/checkpoints/TEMPLATE.md`; запись заполняется в конце каждого занятия после решения о приёмке. Страница максимум. В начале следующего занятия запись сверяется с кодом и `git log`.
+File `docs/checkpoints/CHECKPOINT-0N.md` in the project repository. The template is stored in the repository as `docs/checkpoints/TEMPLATE.md`; fill in the entry at the end of each session after the acceptance decision. One page maximum. At the start of the next session, reconcile the entry with the code and `git log`.
 
 ```markdown
-# Checkpoint 0N — <название>
+# Checkpoint 0N — <title>
 
-**Архив:** `sea-radar-checkpoint-0N-<sha>.zip`, где sha — коммит, в который входит эта запись
-**Дата:** YYYY-MM-DD  **Задачи:** <ID backlog, например B-01…B-04>
+**Archive:** `sea-radar-checkpoint-0N-<sha>.zip`, where sha is the commit that includes this entry
+**Date:** YYYY-MM-DD  **Tasks:** <backlog ID, e.g. B-01…B-04>
 
-## Запуск
+## Run
 
-`<команды установки и запуска на этом checkpoint>`
+`<installation and run commands for this checkpoint>`
 
-## Что сделано
+## Completed
 
-- <факт в терминах поведения: «карта открывается по прямому адресу», не «добавил компонент»>
-- <факт>
+- <fact in terms of behavior: “the map opens at the direct URL”, not “added a component”>
+- <fact>
 
-## Проверки
+## Checks
 
-- `<команда>` → <результат: passed N / failed M / не запускалась>
-- Ручная проверка: <что проверено глазами, одной строкой на действие>
-- Визуально, без автоматического теста: <что именно>
-- Версии (только checkpoint 01): Node, npm, прямые зависимости из lock-файла
+- `<command>` → <result: passed N / failed M / not run>
+- Manual check: <what was checked visually, one line per action>
+- Visual, without an automated test: <specifics>
+- Versions (checkpoint 01 only): Node, npm, direct dependencies from the lock file
 
-## Живое подключение к AISStream
+## Live AISStream connection
 
-не проверялось / успешно HH:MM:SS UTC, судов: N за 15 с / не удалось: <причина без секретов>
+not checked / successful HH:MM:SS UTC, vessels: N in 15 s / failed: <reason without secrets>
 
-## Что осталось за рамками
+## Out of scope
 
-- <что задание требовало, но не сделано>
-- <что сделано, но не проверено>
+- <what the task required but was not done>
+- <what was done but not checked>
 
-## Отклонения от задания
+## Deviations from the brief
 
-- <пункт задания спринта> → <что сделано вместо> → <почему>. Или: «Отклонений нет».
-- Влияет на невыданные задания: да, <какие значения> / нет.
+- <sprint task item> → <what was done instead> → <why>. Or: “No deviations”.
+- Affects unissued tasks: yes, <which values> / no.
 
-## Открытые вопросы
+## Open questions
 
-- <вопрос без ответа>
+- <unanswered question>
 
-## Ближайший шаг
+## Next step
 
-<одна строка: с чего начинается следующее занятие по текущему заданию>
+<one line: where the next session starts for the current task>
 ```
 
-## Правила
+## Rules
 
-- Только факты этого занятия. Слово «работает» — только рядом с командой или ручным действием, которое это показало.
-- Статус подключения — отдельная строка всегда, даже «не проверялось».
-- Статус размещения архива в записи не пишется: запись коммитится до размещения. Не удалось разместить — говорится группе, «опубликовано» не утверждается.
-- Секретов, содержимого `.env.local`, логов сессий — нет.
-- Передаётся студентам вместе с архивом, если архив размещён.
+- Facts from this session only. Use “works” only next to the command or manual action that demonstrated it.
+- Connection status is always a separate line, even “not checked”.
+- Do not record archive placement status: the entry is committed before placement. If placement fails, tell the group; do not claim “published”.
+- No secrets, `.env` contents, or session logs.
+- Pass it to students with the archive, if the archive is placed.

@@ -1,23 +1,23 @@
 ---
-description: Записать checkpoint по шаблону, закоммитить и собрать архив
-argument-hint: <номер, например 01>
+description: Record a checkpoint from the template, commit it, and build an archive
+argument-hint: <number, e.g. 01>
 ---
 
-Решение о приёмке принято. Запиши `docs/checkpoints/CHECKPOINT-$1.md` строго по шаблону `docs/checkpoints/CHECKPOINT_TEMPLATE.md`.
+The acceptance decision has been made. Write `docs/checkpoints/CHECKPOINT-$1.md` strictly following the template `docs/checkpoints/CHECKPOINT_TEMPLATE.md`.
 
-Правила записи:
+Writing rules:
 
-- Только факты этого занятия. Ничего из планов и намерений.
-- Слово «работает» пиши только рядом с командой или ручным действием, которое это показало. Нет команды — нет слова.
-- Раздел «Что осталось за рамками» заполняется всегда: что задание требовало и не сделано, что сделано и не проверено.
-- Статус живого подключения к AISStream — отдельная строка всегда, даже если значение «не проверялось».
-- Отклонения от задания: «пункт → что сделано вместо → почему». Отклонений нет — так и напиши.
-- Проверенное автоматическим тестом и проверенное глазами — разные строки, не смешивай.
-- Секретов, содержимого `.env.local`, логов сессий в записи нет.
+- Only facts from this session. Nothing from plans or intentions.
+- Write the word "works" only next to the command or manual action that demonstrated it. No command, no word.
+- The "Out of scope" section is always filled in: what the task required and wasn't done, what was done and wasn't verified.
+- The live AISStream connection status is always its own line, even if the value is "not checked."
+- Deviations from the task: "item → what was done instead → why." No deviations — say so explicitly.
+- What was verified by an automated test and what was verified by eye are separate lines; don't mix them.
+- No secrets, `.env` contents, or session logs in the record.
 
-После записи:
+After writing:
 
-1. Покажи содержимое файла, прежде чем коммитить.
-2. Коммит с записью.
-3. Вне репозитория собери архив принятого коммита: `git archive` в `sea-radar-checkpoint-$1-<короткий sha>.zip`. Без `.env.local`, `node_modules`, `.next`, неотслеживаемых файлов и истории сессий.
-4. Покажи sha коммита и путь к архиву.
+1. Show the file's contents before committing.
+2. Commit with the record.
+3. Outside the repository, build an archive of the accepted commit: `git archive` into `sea-radar-checkpoint-$1-<short sha>.zip`. Without `.env`, `node_modules`, `.next`, untracked files, or session history.
+4. Show the commit sha and the archive path.
