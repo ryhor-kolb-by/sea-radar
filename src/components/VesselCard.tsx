@@ -9,22 +9,22 @@ import {
 } from "@/vessel";
 
 /**
- * Карточка выбранного судна. Кнопки закрытия нет: карточка закрывается только
- * выбором другого судна.
+ * Card for the selected vessel. There is no close button: the card closes
+ * only by selecting another vessel.
  *
- * Все значения подставляются как текстовые узлы React. Название приходит от
- * экипажа и может содержать разметку — React экранирует её, поэтому `<b>Демо</b>`
- * видно символами, а не жирным шрифтом.
+ * All values are inserted as React text nodes. The name comes from the crew
+ * and may contain markup — React escapes it, so `<b>Demo</b>` is shown as
+ * characters, not bold text.
  */
 export default function VesselCard({ vessel }: { vessel: Vessel }) {
   const rows = [
-    { label: "Идентификатор", value: vessel.id },
-    { label: "Название", value: formatName(vessel.name) },
-    { label: "Координаты", value: formatPosition(vessel.lat, vessel.lon) },
-    { label: "Скорость", value: formatSpeed(vessel.speedKnots) },
-    { label: "Курс", value: formatCourse(vessel.courseDeg) },
-    { label: "Время", value: formatTimestamp(vessel.timestamp) },
-    { label: "Источник", value: formatSource(vessel.source) },
+    { label: "Identifier", value: vessel.id },
+    { label: "Name", value: formatName(vessel.name) },
+    { label: "Coordinates", value: formatPosition(vessel.lat, vessel.lon) },
+    { label: "Speed", value: formatSpeed(vessel.speedKnots) },
+    { label: "Course", value: formatCourse(vessel.courseDeg) },
+    { label: "Time", value: formatTimestamp(vessel.timestamp) },
+    { label: "Source", value: formatSource(vessel.source) },
   ];
 
   return (
