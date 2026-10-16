@@ -1,12 +1,11 @@
 /**
- * Согласованные значения проекта. Район, начальный вид, слой карты и
- * демонстрационные суда живут только здесь — больше нигде эти числа и строки
- * не повторяются.
+ * Agreed project values. The area, initial view, map layer, and demo vessels
+ * live only here — these numbers and strings are not repeated anywhere else.
  */
 
 import { formatSource } from "@/vessel";
 
-/** Пролив Дувр: юго-западный и северо-восточный углы района. */
+/** Strait of Dover: the area's southwest and northeast corners. */
 export const AREA_BOUNDS = {
   south: 50.75,
   west: 0.95,
@@ -14,46 +13,49 @@ export const AREA_BOUNDS = {
   east: 1.95,
 } as const;
 
-/** Вид карты при открытии страницы. */
+/** Map view when the page opens. */
 export const INITIAL_VIEW = {
   lat: 51.0,
   lon: 1.45,
   zoom: 10,
 } as const;
 
-/** Слой OpenStreetMap Standard. */
+/** The OpenStreetMap Standard layer. */
 export const TILE_LAYER = {
   url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
   attribution: "© OpenStreetMap contributors",
 } as const;
 
 /**
- * Подпись источника на панели. Пока данные только демонстрационные, это та же
- * подпись, что и в карточке, — берётся из одного места, чтобы не разошлась.
+ * Source label on the panel. While the data is demo-only, this is the same
+ * label used on the card — it comes from one place so the two never diverge.
  */
 export const SOURCE_LABEL = formatSource("demo");
 
-/** Адрес потока AISStream. Ключ сюда не входит — он уходит в подписке. */
+/** AISStream feed address. The key is not part of it — it goes in the subscription. */
 export const AISSTREAM_URL = "wss://stream.aisstream.io/v0/stream";
 
 /**
- * Срок сбора: столько секунд от начала серверной обработки запроса, включая
- * соединение и отправку подписки. Та же константа стоит в подписи на экране,
- * поэтому живёт здесь, а не в модуле сбора.
+ * Collection window: this many seconds from the start of server-side request
+ * processing, including connecting and sending the subscription. The same
+ * constant appears in the on-screen label, so it lives here rather than in
+ * the collector module.
  */
 export const SNAPSHOT_WINDOW_SECONDS = 15;
 
 /**
- * Предел набора: столько уникальных судов с валидной позицией, и сбор
- * завершается немедленно, не дожидаясь конца срока. Заказчику нужен пример
- * района, а не весь пролив. Число называет и подпись на экране («остановлено на
- * лимите 100»), поэтому стоит рядом с окном, в одном месте.
+ * Set limit: this many unique vessels with a valid position, and collection
+ * ends immediately without waiting out the window. The customer needs a
+ * sample of the area, not the whole strait. The number is also named in the
+ * on-screen label ("stopped at the limit of 100"), so it sits next to the
+ * window, in one place.
  */
 export const SNAPSHOT_VESSEL_LIMIT = 100;
 
 /**
- * Подписка на район: AISStream ждёт список прямоугольников, каждый — пара углов
- * `[широта, долгота]`. Район один, отсюда три уровня вложенности.
+ * Area subscription: AISStream expects a list of rectangles, each a pair of
+ * `[latitude, longitude]` corners. There is one area, hence the three levels
+ * of nesting.
  */
 export const SUBSCRIPTION_BOUNDING_BOXES = [
   [
@@ -62,16 +64,16 @@ export const SUBSCRIPTION_BOUNDING_BOXES = [
   ],
 ] as const;
 
-/** Точка маршрута: только координаты, время и курс из неё выводятся. */
+/** A route point: only coordinates — time and course are derived from it. */
 export type RoutePoint = {
   readonly lat: number;
   readonly lon: number;
 };
 
 /**
- * Демонстрационное судно: маршрут фиксированной последовательностью точек и
- * скорость движения рядом с ним. Точки заданы литералами и не вычисляются —
- * маршрут должен быть одинаковым при каждом запуске занятия.
+ * A demo vessel: a route given as a fixed sequence of points, plus its speed.
+ * Points are literals, not computed — the route must be identical on every
+ * run of the session.
  */
 export type DemoRoute = {
   readonly id: string;
@@ -80,32 +82,33 @@ export type DemoRoute = {
   readonly route: readonly RoutePoint[];
 };
 
-/** Шаг демонстрации: раз в столько миллисекунд суда переходят к следующей точке. */
+/** Demo step: vessels advance to the next point this often, in milliseconds. */
 export const DEMO_TICK_MS = 2000;
 
 /**
- * Время сообщения до первого тика. Литерал, а не текущее время: страница
- * пререндерится при сборке, и `new Date()` в теле рендера дал бы на сервере и
- * в браузере разный текст — расхождение гидратации. Настоящее время запуска
- * таймера проставляется в эффекте, то есть уже в браузере.
+ * Message time before the first tick. A literal, not the current time: the
+ * page is prerendered at build time, and `new Date()` in the render body
+ * would give the server and the browser different text — a hydration
+ * mismatch. The real timer-start time is set in an effect, i.e. already in
+ * the browser.
  */
 export const DEMO_START_TIME = "2026-09-10T12:00:00Z";
 
 /**
- * Три демонстрационных судна. Маршруты разведены по проливу, чтобы на
- * проекторе суда не сливались: demo-1 идёт вниз по проливу на юго-запад,
- * demo-2 — навстречу ему на северо-восток, demo-3 пересекает пролив с
- * северо-запада на юго-восток, как паром.
+ * Three demo vessels. Routes are spread across the strait so they don't
+ * overlap on the projector: demo-1 heads down the strait to the southwest,
+ * demo-2 heads toward it to the northeast, demo-3 crosses the strait from
+ * northwest to southeast, like a ferry.
  *
- * Все точки лежат внутри AREA_BOUNDS.
+ * All points lie inside AREA_BOUNDS.
  */
 export const DEMO_ROUTES: readonly DemoRoute[] = [
   {
     id: "demo-1",
-    name: "Демо-судно 1",
+    name: "Demo vessel 1",
     speedKnots: 12.3,
     route: [
-      // Первая точка — центр начального вида: судно видно сразу при открытии.
+      // The first route point matches the map's initial center, so the vessel is visible on load.
       { lat: 51.0, lon: 1.45 },
       { lat: 50.98, lon: 1.4 },
       { lat: 50.96, lon: 1.35 },
@@ -120,7 +123,7 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
   },
   {
     id: "demo-2",
-    name: "Демо-судно 2",
+    name: "Demo vessel 2",
     speedKnots: 9.6,
     route: [
       { lat: 50.8, lon: 1.25 },
@@ -136,7 +139,7 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
   },
   {
     id: "demo-3",
-    name: "Демо-судно 3",
+    name: "Demo vessel 3",
     speedKnots: 18.5,
     route: [
       { lat: 51.12, lon: 1.32 },

@@ -1,6 +1,7 @@
 /*
- * Высота задаётся всей цепочке от html до контейнера карты. Проценты считаются
- * от родителя, поэтому пропуск любого звена схлопывает карту в нулевую высоту.
+ * Height is set on the whole chain from html down to the map container.
+ * Percentages are computed from the parent, so skipping any link collapses
+ * the map to zero height.
  */
 html,
 body {
@@ -16,7 +17,7 @@ body {
   height: 100%;
 }
 
-/* Карта занимает всю свободную ширину, панель — фиксированную полосу справа. */
+/* The map takes all available width; the panel is a fixed strip on the right. */
 .radar {
   display: flex;
   height: 100%;
@@ -35,7 +36,7 @@ body {
   overflow-y: auto;
 }
 
-/* Кнопка стоит первой в панели, подпись источника — под ней. */
+/* The button comes first in the panel; the source label sits below it. */
 .load-button {
   width: 100%;
   margin-bottom: 12px;
@@ -49,7 +50,7 @@ body {
   cursor: pointer;
 }
 
-/* Пока идёт сбор, кнопка недоступна — это видно, а не только заблокировано. */
+/* While collection is in progress, the button is unavailable — visibly so, not just disabled. */
 .load-button:disabled {
   border-color: #a1a1aa;
   background: #a1a1aa;
@@ -62,7 +63,7 @@ body {
   color: #52525b;
 }
 
-/* Сообщение под подписью: пустой результат или причина ошибки. */
+/* The message under the label: an empty result or the reason for an error. */
 .notice {
   margin: 8px 0 0;
   font-size: 14px;
@@ -95,12 +96,11 @@ body {
 .card-row dd {
   margin: 0;
   text-align: right;
-  /* Название задаёт экипаж: длинное слово должно переноситься, а не растягивать
-     панель. */
+  /* The crew sets the name: a long word must wrap rather than stretch the panel. */
   overflow-wrap: anywhere;
 }
 
-/* Значок центрируется в своём маркере, чтобы поворот шёл вокруг судна. */
+/* The icon is centered within its marker so the rotation pivots around the vessel. */
 .vessel-icon {
   display: flex;
   align-items: center;

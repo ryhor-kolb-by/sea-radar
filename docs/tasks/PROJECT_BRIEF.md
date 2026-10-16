@@ -1,151 +1,151 @@
-# Sea Radar — задание от заказчика
+# Sea Radar — Client Brief
 
-**Заказчик:** учебный центр морской подготовки «Норд-Вест», отделение теории судовождения.
-**Контакт:** методист отделения.
-**Что заказываем:** небольшую программу для показа движения судов на занятиях.
+**Client:** “Nord-West” maritime training center, navigation theory department.
+**Contact:** Department methodologist.
+**What we are commissioning:** a small program for demonstrating vessel movement during lessons.
 
 ---
 
-## 1. Зачем нам это
+## 1. Why We Need This
 
-На занятиях по основам судовождения мы объясняем курсантам, как читать обстановку на воде: где идут суда, каким курсом, с какой скоростью, как это меняется во времени. Лучше всего это работает на живом примере — настоящие суда в настоящем проливе.
+In lessons on the fundamentals of navigation, we explain to cadets how to read conditions on the water: where vessels are going, on what course, at what speed, and how this changes over time. This works best with a live example—real vessels in a real strait.
 
-Сейчас мы открываем публичные сайты слежения за судами. Это плохо работает на занятии: реклама, весь мир на экране, детали по судну — только после регистрации, интерфейс перегружен, и преподаватель не контролирует, что именно видят курсанты. Мы теряем время на борьбу с сайтом вместо объяснения.
+We currently open public vessel-tracking websites. This works poorly during a lesson: there are ads, the whole world is on the screen, vessel details are available only after registration, the interface is overloaded, and the instructor has no control over exactly what the cadets see. We waste time fighting the website instead of teaching.
 
-Нам нужен свой простой инструмент, который запускается на ноутбуке преподавателя и показывает одно: карту одного пролива и суда на ней.
+We need our own simple tool that runs on the instructor's laptop and shows one thing: a map of one strait and vessels on it.
 
-## 2. Кто будет пользоваться
+## 2. Who Will Use It
 
-**Преподаватель.** Открывает программу перед занятием, показывает на проекторе, кликает по судам, объясняет. Не программист, но уверенно пользуется компьютером. Ему важно, чтобы всё запускалось одинаково каждый раз и не ломалось посреди объяснения.
+**Instructor.** Opens the program before class, displays it on a projector, clicks on vessels, and explains. Not a programmer, but comfortable using a computer. It's important that everything starts the same way every time and doesn't break in the middle of an explanation.
 
-**Курсанты.** Смотрят на экран. Сами программой не пользуются.
+**Cadets.** Watch the screen. They don't use the program themselves.
 
-Одновременно программой пользуется один человек на одном компьютере. Нескольких пользователей, входа по паролю и общего сервера не нужно.
+One person uses the program on one computer at a time. We don't need multiple users, password login, or a shared server.
 
-## 3. Как мы представляем себе занятие
+## 3. How We Imagine a Lesson
 
-Преподаватель запускает программу и открывает её в браузере. На экране карта пролива Дувр — самого узкого места Ла-Манша, одного из самых загруженных морских путей в мире; мы разбираем его как учебный пример. Пока преподаватель объясняет, что такое курс и скорость, по карте движутся несколько учебных (выдуманных) судов — это нужно, чтобы не зависеть от того, есть ли прямо сейчас трафик и интернет.
+The instructor launches the program and opens it in a browser. The screen shows a map of the Strait of Dover—the narrowest part of the English Channel, one of the busiest shipping routes in the world; we use it as a teaching example. While the instructor explains course and speed, several training (fictional) vessels move across the map—this is necessary so we don't depend on whether there is traffic or internet at that moment.
 
-Когда объяснение дошло до реальной обстановки, преподаватель нажимает кнопку — и программа показывает настоящие суда, которые сейчас находятся в проливе. Преподаватель кликает по судну и показывает курсантам его данные: название, координаты, скорость, курс, время последнего сообщения.
+When the explanation moves on to real conditions, the instructor presses a button—and the program shows the real vessels currently in the strait. The instructor clicks on a vessel and shows the cadets its data: name, coordinates, speed, course, and time of the last message.
 
-Нам важно, чтобы программа честно говорила, что показывает: учебные данные или настоящие, когда они получены, и что это не полная картина — а только те суда, о которых удалось получить сообщения.
+It's important that the program clearly state what it is showing: training or real data, when it was received, and that it is not a complete picture—but only the vessels for which messages were received.
 
-## 4. Откуда брать настоящие данные
+## 4. Where to Get Real Data
 
-Суда передают свои позиции по системе AIS. Мы нашли бесплатный источник таких данных — сервис AISStream (aisstream.io). Он требует ключ доступа; мы оформим ключ на себя и передадим исполнителю. Ключ должен храниться так, чтобы его нельзя было увидеть в программе, и его нельзя выкладывать в открытый доступ.
+Vessels transmit their positions using the AIS system. We found a free source of this data—the AISStream service (aisstream.io). It requires an access key; we will register a key in our name and provide it to the developer. The key must be stored so it cannot be seen in the program, and it must not be made publicly available.
 
-Мы понимаем, что бесплатный сервис не гарантирует работу и что в какой-то момент судов в проливе может оказаться мало. Программа должна это спокойно переживать: без ключа или без связи учебные суда всё равно должны работать, а при неудаче с настоящими данными — понятно объяснять, что произошло.
+We understand that a free service does not guarantee availability and that there may be few vessels in the strait at some point. The program should handle this gracefully: training vessels must still work without a key or connection, and if real data cannot be retrieved, it should clearly explain what happened.
 
-Нам не нужен непрерывный поток — достаточно снимка на момент нажатия кнопки: несколько секунд сбора, разумное количество судов. Мы не мониторинговый центр.
+We don't need a continuous stream—a snapshot at the moment the button is pressed is enough: collect data for a few seconds and show a reasonable number of vessels. We are not a monitoring center.
 
-## 5. Что должна уметь программа
+## 5. What the Program Must Do
 
-Ниже — пользовательские истории. Под каждой — как мы поймём, что она выполнена.
+Below are the user stories. Under each one is how we will know it has been completed.
 
-### US-01. Открыть карту пролива
+### US-01. Open the Strait Map
 
-Как преподаватель, я открываю программу и вижу карту пролива Дувр, чтобы начать занятие без настройки.
+As an instructor, I open the program and see a map of the Strait of Dover, so I can start the lesson without configuration.
 
-Принимается, если: программа запускается одной командой на ноутбуке; в браузере открывается карта нужного района; карту можно двигать и приближать; при обновлении страницы и изменении размера окна карта не ломается; на карте видно, откуда взята сама карта и кто её авторы.
+Accepted if: the program launches with one command on a laptop; a map of the correct area opens in the browser; the map can be panned and zoomed; the map does not break when the page is refreshed or the window is resized; the map shows the source of the map itself and its contributors.
 
-### US-02. Видеть учебные суда
+### US-02. See Training Vessels
 
-Как преподаватель, я вижу на карте три учебных судна, чтобы объяснять курс и скорость, даже если настоящих данных сейчас нет.
+As an instructor, I see three training vessels on the map so I can explain course and speed even if real data is not available.
 
-Принимается, если: при открытии программы на карте три судна с понятными учебными именами; каждое обозначено значком, повёрнутым по направлению движения; видно, что данные учебные.
+Accepted if: when the program opens, there are three vessels on the map with clear training names; each is marked with an icon rotated in the direction of movement; it is clear that the data is for training.
 
-### US-03. Наблюдать движение учебных судов
+### US-03. Observe Training Vessel Movement
 
-Как преподаватель, я вижу, как учебные суда движутся по своим маршрутам, чтобы показать изменение положения во времени.
+As an instructor, I see training vessels move along their routes so I can demonstrate how position changes over time.
 
-Принимается, если: суда заметно перемещаются каждые несколько секунд; значок поворачивается по направлению движения; дойдя до конца маршрута, судно останавливается и стоит; после обновления страницы движение начинается с начала. Пауза, перемотка и повтор не нужны.
+Accepted if: vessels visibly move every few seconds; the icon rotates in the direction of movement; when a vessel reaches the end of its route, it stops and remains there; after the page is refreshed, movement starts from the beginning. Pause, rewind, and replay are not needed.
 
-### US-04. Открыть карточку судна
+### US-04. Open a Vessel Card
 
-Как преподаватель, я кликаю по судну и вижу его данные, чтобы разобрать конкретный пример с курсантами.
+As an instructor, I click on a vessel and see its data so I can discuss a specific example with the cadets.
 
-Принимается, если: по клику открывается карточка с номером судна (MMSI), названием, координатами, скоростью в узлах, курсом в градусах, временем последнего сообщения и указанием, откуда данные; карточка показывает именно то судно, по которому кликнули, и сама не переключается на другое; если судно движется — карточка обновляется вместе с ним; если какое-то значение неизвестно, написано «Нет данных», а не ноль. Ноль скорости — это стоящее судно, и он показывается как ноль.
+Accepted if: clicking opens a card with the vessel's identification number (MMSI), name, coordinates, speed in knots, course in degrees, time of the last message, and an indication of where the data came from; the card shows exactly the vessel that was clicked and does not switch to another by itself; if the vessel is moving, the card updates along with it; if a value is unknown, it says “No data,” not zero. Zero speed means the vessel is stationary, and is displayed as zero.
 
-### US-05. Загрузить настоящие суда
+### US-05. Load Real Vessels
 
-Как преподаватель, я нажимаю кнопку и вижу на карте настоящие суда, которые сейчас в проливе, чтобы перейти от учебного примера к реальной обстановке.
+As an instructor, I press a button and see the real vessels currently in the strait on the map so I can move from the training example to real conditions.
 
-Принимается, если: кнопка одна и понятная; после нажатия программа несколько секунд собирает данные и показывает полученные суда на той же карте теми же значками; пока идёт сбор, кнопку нельзя нажать второй раз; по настоящему судну открывается такая же карточка; если я кликнул по настоящему судну, а потом загрузил ещё раз, программа не путает суда.
+Accepted if: there is one clear button; after it is pressed, the program collects data for a few seconds and shows the vessels received on the same map with the same icons; while collection is in progress, the button cannot be pressed a second time; clicking a real vessel opens the same kind of card; if I click a real vessel and then load again, the program does not confuse the vessels.
 
-### US-06. Понимать, что я вижу
+### US-06. Understand What I Am Seeing
 
-Как преподаватель, я хочу видеть подпись, откуда данные и когда получены, чтобы не выдать курсантам устаревшую или неполную картину за актуальную.
+As an instructor, I want to see a label indicating where the data came from and when it was received, so I don't present an outdated or incomplete picture as current to the cadets.
 
-Принимается, если: рядом с картой всегда написано — учебные это данные или настоящие; для настоящих указано время получения и сколько судов получено; ясно сказано, что это не все суда района, а только те, о которых пришли сообщения за время сбора; настоящие суда не «доезжают» между загрузками — они стоят там, где были получены; о каждом судне показывается его последнее по времени сообщение, а не случайное.
+Accepted if: the map always has a nearby label saying whether the data is training or real; for real data, the time it was received and the number of vessels received are indicated; it is clearly stated that these are not all vessels in the area, but only those for which messages arrived during the collection period; real vessels do not “move along” between loads—they remain where they were when received; for each vessel, the most recent message by time is shown, not an arbitrary one.
 
-### US-07. Понимать, когда не получилось
+### US-07. Understand When It Didn't Work
 
-Как преподаватель, я хочу понятное сообщение, если настоящие данные получить не удалось, чтобы не гадать и не перезапускать программу.
+As an instructor, I want a clear message if real data could not be retrieved so I don't have to guess or restart the program.
 
-Принимается, если: при отсутствии ключа, отсутствии связи или ошибке источника на экране появляется понятная фраза о причине; если за время сбора не пришло ни одного сообщения — программа так и говорит, а не пишет «судов нет»; учебные суда после обновления страницы снова работают.
+Accepted if: when the key is missing, there is no connection, or the source returns an error, a clear explanation of the reason appears on screen; if no messages arrive during the collection period, the program says so rather than displaying “no vessels”; training vessels work again after the page is refreshed.
 
-### US-08. Не зависеть от интернета для учебной части
+### US-08. Use the Training Part Without Internet
 
-Как преподаватель, я хочу, чтобы учебные суда и карточки работали без ключа и без связи с источником данных, чтобы занятие не срывалось.
+As an instructor, I want training vessels and cards to work without a key and without a connection to the data source so the lesson is not disrupted.
 
-Принимается, если: программа запускается и показывает учебные суда без настроенного ключа; попытка загрузить настоящие данные без ключа заканчивается понятным сообщением, а не ошибкой программы.
+Accepted if: the program launches and shows training vessels without a configured key; an attempt to load real data without a key ends with a clear message, not a program error.
 
-### US-09. Доверять данным
+### US-09. Trust the Data
 
-Как методист, я хочу быть уверен, что программа не искажает данные, чтобы курсанты не учились на ошибках.
+As a methodologist, I want to be confident that the program does not distort the data so cadets don't learn from mistakes.
 
-Принимается, если исполнитель показывает нам воспроизводимые проверки, а не рассказывает словами: если о судне пришло несколько сообщений — показывается самое свежее по времени; одно и то же судно не показывается дважды; неизвестная скорость или курс показываются как «Нет данных», а не как ноль; судно без внятных координат на карте не появляется вовсе; сбор действительно ограничен по времени и количеству; если связь оборвалась посреди сбора — программа говорит об этом, а не показывает часть как результат.
+Accepted if the developer demonstrates reproducible checks rather than just describing them: if multiple messages arrive for a vessel, the most recent one by time is shown; the same vessel is not shown twice; unknown speed or course is displayed as “No data,” not zero; a vessel without valid coordinates does not appear on the map at all; collection is genuinely limited by time and quantity; if the connection is interrupted during collection, the program reports this rather than showing a partial result.
 
-### US-10. Запустить самостоятельно
+### US-10. Install It Independently
 
-Как преподаватель, я хочу поставить программу на другой ноутбук по короткой инструкции, чтобы не зависеть от одного компьютера.
+As an instructor, I want to install the program on another laptop using a short set of instructions so I don't depend on a single computer.
 
-Принимается, если: в комплекте есть инструкция, по которой человек без помощи исполнителя ставит и запускает программу; в инструкции сказано, куда вписать ключ, как проверить, что всё работает, и что программа умеет и чего не умеет.
+Accepted if: the package includes instructions that let someone install and run the program without help from the developer; the instructions say where to enter the key, how to check that everything works, and what the program can and cannot do.
 
-## 6. Что нам не нужно
+## 6. What We Don't Need
 
-Чтобы исполнитель не тратил время на лишнее:
+So the developer doesn't spend time on unnecessary work:
 
-- зоны, тревоги, уведомления о входе судов в район;
-- история движения, следы, воспроизведение прошлого;
-- поиск судна по названию, фильтры;
-- несколько районов и переключение между ними;
-- сохранение настроек между запусками;
-- непрерывное обновление в реальном времени — только снимок по кнопке;
-- вход по паролю, несколько пользователей, работа через интернет с других компьютеров;
-- размещение на сервере или в облаке — всё работает на ноутбуке;
-- рекомендации, прогнозы, «умные» функции;
-- использование для реальной навигации — это учебное пособие.
+- zones, alerts, notifications when vessels enter an area;
+- movement history, tracks, playback of the past;
+- searching for vessels by name, filters;
+- multiple areas and switching between them;
+- saving settings between launches;
+- continuous real-time updates—only a snapshot on button press;
+- password login, multiple users, access over the internet from other computers;
+- deployment to a server or cloud—everything runs on the laptop;
+- recommendations, forecasts, “smart” features;
+- use for real navigation—this is a teaching aid.
 
-## 7. Ограничения
+## 7. Constraints
 
-- Программа работает только на компьютере преподавателя и не открывается наружу.
-- Ключ доступа к данным не должен попасть в исходный код, в передаваемые нам файлы и на экран.
-- Названия судов вводят их экипажи, и там может оказаться что угодно — программа показывает название буквами как есть и не должна от него ломаться.
-- Для карты и настоящих данных нужен интернет; полностью автономная работа карты не требуется.
-- Район один и фиксирован. Если преподаватель случайно сдвинул карту, по кнопке всё равно показываются суда из пролива.
+- The program runs only on the instructor's computer and is not exposed externally.
+- The data access key must not end up in the source code, in files delivered to us, or on screen.
+- Vessel names are entered by their crews and could contain anything—the program displays the name as text, exactly as provided, and must not break because of it.
+- Internet is required for the map and real data; fully offline map operation is not required.
+- There is one fixed area. If the instructor accidentally pans the map, the button must still show vessels from the strait.
 
-## 8. Как мы хотим получать результат
+## 8. How We Want to Receive the Result
 
-Мы хотим видеть работающую программу по частям, а не всё в конце:
+We want to see a working program in stages, not all at the end:
 
-1. **Сначала** — карта и учебные суда с карточками (US-01…US-04). Это уже можно показывать на занятии.
-2. **Потом** — настоящие суда по кнопке с подписями и сообщениями об ошибках (US-05…US-08).
-3. **В конце** — доказательства, что данные не искажаются (US-09).
+1. **First** — the map and training vessels with cards (US-01…US-04). This is already usable in a lesson.
+2. **Then** — real vessels via a button, with labels and error messages (US-05…US-08).
+3. **Finally** — evidence that the data is not being distorted (US-09).
 
-Инструкцию по установке (US-10) ждём вместе с финальной передачей.
+We expect the installation instructions (US-10) with the final handoff.
 
-После каждой части мы хотим получить версию, которую можно запустить и посмотреть, и короткое описание: что сделано, что проверено, чего пока нет. Если в процессе у нас появятся уточнения, мы пришлём их отдельным письмом, а не будем переписывать это задание.
+After each stage, we want to receive a version that we can run and inspect, and a short description of what was done, what was checked, and what is still missing. If we have clarifications during the process, we will send them in a separate email rather than rewrite this brief.
 
-## 9. Как будем принимать
+## 9. How We Will Accept It
 
-- Запускаем программу на своём ноутбуке по инструкции.
-- Проходим истории US-01…US-08 руками.
-- Смотрим проверки по US-09 и убеждаемся, что они реально запускаются и проходят.
-- Проверяем, что без ключа учебная часть работает, а с ключом хотя бы один раз загрузились настоящие суда — либо исполнитель честно показывает, что источник в этот момент был недоступен.
-- Убеждаемся, что ключа нет в переданных файлах.
+- Launch the program on our laptop using the instructions.
+- Manually walk through stories US-01…US-08.
+- Review the checks for US-09 and confirm that they actually run and pass.
+- Verify that the training part works without a key, and that with a key, real vessels were loaded at least once—or the developer honestly demonstrates that the source was unavailable at that time.
+- Confirm that the key is not in the delivered files.
 
-## 10. Что мы сами не знаем
+## 10. What We Don't Know Ourselves
 
-- Насколько стабилен бесплатный источник и сколько судов он отдаёт по проливу в разное время суток. Если окажется мало — это не претензия к исполнителю, но программа должна честно это показывать.
-- Какие условия у бесплатного сервиса и что они разрешают исполнителю — просим проверить перед использованием.
+- How stable the free source is and how many vessels it provides for the strait at different times of day. If there are too few, that's not a complaint about the developer, but the program must show this honestly.
+- What the free service's terms are and what they allow the developer to do—we ask that these be checked before use.

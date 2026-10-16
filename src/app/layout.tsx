@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Sea Radar",
-  description: "Учебная карта судов в проливе Дувр",
+  description: "Educational vessel map in the Strait of Dover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

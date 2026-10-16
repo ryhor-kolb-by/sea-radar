@@ -10,12 +10,12 @@ import type { Vessel } from "@/vessel";
 const ICON_SIZE = 24;
 
 /**
- * Значок судна. Курс есть — треугольник, повёрнутый по курсу: 0° смотрит на
- * север, отсчёт по часовой стрелке, как у азимута. Курса нет — нейтральный
- * круг: поворачивать не по чему, и вид должен это показывать.
+ * A vessel's icon. With a course, it's a triangle rotated to that course: 0°
+ * points north, measured clockwise, like a bearing. Without a course, it's a
+ * neutral circle: there's nothing to rotate by, and the look must say so.
  *
- * Разметка собирается из литералов; данные экипажа (название) сюда не
- * попадают, поэтому строка HTML безопасна.
+ * The markup is assembled from literals; crew data (the name) never ends up
+ * here, so the HTML string is safe.
  */
 function vesselIcon(vessel: Vessel) {
   const hasCourse = vessel.courseDeg !== null;
@@ -34,8 +34,8 @@ function vesselIcon(vessel: Vessel) {
 }
 
 /**
- * Карта района. Этот модуль загружается только в браузере: Leaflet при импорте
- * обращается к window, поэтому на сервере он не должен исполняться вовсе.
+ * The area map. This module loads only in the browser: Leaflet touches
+ * window on import, so it must never run on the server.
  */
 export default function LeafletMap({
   vessels,
@@ -45,22 +45,25 @@ export default function LeafletMap({
   vessels: readonly Vessel[];
   onSelect: (id: string) => void;
   /**
-   * Счётчик возвратов к начальному виду. Изменился — карта возвращается к
-   * INITIAL_VIEW. Число, а не флаг: флаг «вернуть вид» пришлось бы гасить
-   * обратно, а по счётчику видно именно событие, а не состояние. Значение 0 на
-   * первом рендере ничего не делает — вид при создании карты и так начальный.
+   * Counter for returns to the initial view. When it changes, the map
+   * returns to INITIAL_VIEW. It's a number, not a flag: a "reset the view"
+   * flag would have to be cleared back, whereas a counter shows the event
+   * itself, not a state. A value of 0 on the first render does nothing — the
+   * view is already the initial one when the map is created.
    */
   viewResetKey: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Обработчик читается через ref: иначе новая функция на каждый рендер попала
-  // бы в зависимости эффекта и карта пересоздавалась бы при каждом выборе.
+  // The handler is read via a ref: otherwise a new function on every render
+  // would land in the effect's dependencies and the map would be recreated
+  // on every selection.
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
-  // Карта и маркеры переживают рендеры: карта создаётся один раз, маркеры
-  // потом двигаются по id. Без этого каждый тик пересоздавал бы карту.
+  // The map and markers survive renders: the map is created once, and
+  // markers afterward are moved by id. Without this, every tick would
+  // recreate the map.
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef(new Map<string, L.Marker>());
 
@@ -85,24 +88,28 @@ export default function LeafletMap({
 
     mapRef.current = map;
 
-    // Клик по карте вне судов выбор не меняет, поэтому обработчика на карте
-    // нет вовсе. Leaflet сам не снимает выбор — снимать нечему.
+    // Clicking the map away from any vessel doesn't change the selection, so
+    // there's no map click handler at all. Leaflet itself doesn't clear a
+    // selection — there's nothing for it to clear.
 
-    // В режиме разработки React вызывает эффект дважды. Без снятия карты
-    // второй вызов падает на «Map container is already initialized».
+    // In development, React invokes the effect twice. Without tearing down
+    // the map, the second call fails with "Map container is already
+    // initialized."
     return () => {
       map.remove();
       mapRef.current = null;
-      // Маркеры принадлежали снятой карте: ссылки на них больше не годятся,
-      // иначе следующий проход двигал бы значки удалённой карты.
+      // The markers belonged to the removed map: references to them are no
+      // longer valid, otherwise the next pass would move icons on a deleted
+      // map.
       markersRef.current.clear();
     };
   }, []);
 
   /**
-   * Положение и значок судов. Отдельный эффект: карта создаётся один раз, а
-   * этот проход идёт на каждом тике. Маркеры не пересоздаются — двигается
-   * существующий, иначе на карте моргали бы значки и терялся бы обработчик.
+   * Vessel positions and icons. A separate effect: the map is created once,
+   * while this pass runs on every tick. Markers aren't recreated — the
+   * existing one is moved, otherwise icons would flicker on the map and the
+   * handler would be lost.
    */
   useEffect(() => {
     const map = mapRef.current;
@@ -112,13 +119,15 @@ export default function LeafletMap({
 
     const markers = markersRef.current;
 
-    // Суда, которых в новом наборе нет, снимаются с карты. Демонстрация всегда
-    // отдавала те же три судна, и до появления загрузки удалять было нечего;
-    // теперь набор меняется целиком — при загрузке, ошибке и пустом ответе на
-    // карте не должно остаться значков с прошлого экрана.
+    // Vessels absent from the new set are removed from the map. The demo
+    // always returned the same three vessels, and before loading existed
+    // there was nothing to remove; now the set changes entirely — on
+    // loading, on error, and on an empty response, no icons from the
+    // previous screen should remain on the map.
     //
-    // Исчезновение судна из набора значит только, что в этот снимок оно не
-    // попало: пятнадцать секунд — не весь эфир района. Это не «судно ушло».
+    // A vessel disappearing from the set only means it didn't make it into
+    // this snapshot: fifteen seconds isn't the entire traffic of the area.
+    // It doesn't mean "the vessel left."
     const present = new Set(vessels.map((vessel) => vessel.id));
     for (const [id, marker] of markers) {
       if (!present.has(id)) {
@@ -135,8 +144,9 @@ export default function LeafletMap({
           icon: vesselIcon(vessel),
         }).addTo(map);
 
-        // Обработчик ставится один раз на маркер и читает id из замыкания:
-        // id судна не меняется, меняются только его координаты и курс.
+        // The handler is attached once per marker and reads the id from the
+        // closure: the vessel's id doesn't change, only its coordinates and
+        // course do.
         marker.on("click", () => {
           onSelectRef.current(vessel.id);
         });
@@ -146,17 +156,18 @@ export default function LeafletMap({
       }
 
       existing.setLatLng([vessel.lat, vessel.lon]);
-      // Значок пересобирается целиком: вместе с поворотом он несёт
-      // data-vessel-id и data-icon, и после шага они должны остаться верными.
+      // The icon is rebuilt entirely: along with the rotation it carries
+      // data-vessel-id and data-icon, and after a step they must still be
+      // correct.
       existing.setIcon(vesselIcon(vessel));
     }
   }, [vessels]);
 
   /**
-   * Возврат к начальному виду. Отдельный эффект и отдельная зависимость: вид
-   * трогается только когда сменился счётчик, а не при каждом новом наборе, —
-   * иначе вторая загрузка сбрасывала бы карту, которую человек только что
-   * подвинул.
+   * Resetting to the initial view. A separate effect with a separate
+   * dependency: the view is touched only when the counter changes, not on
+   * every new set — otherwise a second load would reset a map the person
+   * had just panned.
    */
   useEffect(() => {
     const map = mapRef.current;

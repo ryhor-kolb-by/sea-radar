@@ -1,79 +1,79 @@
-# Аудит соответствия Sea Radar требованиям спринтов
+# Sea Radar Sprint Requirements Compliance Audit
 
-**Дата:** 2026-09-24  
-**Охват:** `PROJECT_BRIEF.md`, доступные `SPRINT-01…03.md`, текущие исходники и тесты, checkpoints 01–04.  
-**Результат:** основная реализация R1–R3 присутствует; локальные сборка и все имеющиеся тесты прошли. Полное соответствие всем ожидаемым релизам подтвердить нельзя: отсутствуют требования к занятию 6 (R4/B-18…B-21), не выполнен/зафиксирован checkpoint 05, остаются пункты приёмки, требующие ручной проверки, и одно подтверждённое расхождение в обработке `MessageType`.
+**Date:** 2026-09-24  
+**Scope:** `PROJECT_BRIEF.md`, available `SPRINT-01…03.md`, current source and tests, checkpoints 01–04.  
+**Result:** The main R1–R3 implementation is present; the local build and all available tests passed. Full compliance with all expected releases cannot be confirmed: requirements for session 6 (R4/B-18…B-21) are missing, checkpoint 05 has not been completed/recorded, acceptance items requiring manual checks remain, and there is one confirmed discrepancy in `MessageType` handling.
 
-## Независимость и метод
+## Independence and method
 
-Проверка проведена в отдельном контексте без истории авторских правок. Новую интерактивную Claude Code-сессию из этой среды запустить нельзя; поэтому данный отчёт не утверждает, что была создана вторая сессия. В проекте нет Git-метаданных, поэтому сравнение diff с checkpoint 04 и проверка статуса tracked-файлов недоступны.
+The review was conducted in a separate context without the history of the author’s edits. A new interactive Claude Code session cannot be started from this environment; therefore, this report does not claim that a second session was created. The project has no Git metadata, so comparison of the diff with checkpoint 04 and verification of tracked-file status are unavailable.
 
-Сверены текст задания, код, тестовые ожидания и предыдущие checkpoint-записи. Запущены только локальные команды: `npm run build`, `npm test`, `node --version`, `npm --version`. Тесты сборщика используют подменённый транспорт/часы, тесты интерфейса подменяют ответ маршрута; живое подключение к AISStream не выполнялось. Содержимое `.env*` и значения переменных окружения не читались и не включены в отчёт.
+The brief, code, test expectations, and previous checkpoint entries were compared. Only local commands were run: `npm run build`, `npm test`, `node --version`, `npm --version`. Collector tests use a substituted transport/clock; interface tests mock the route response; no live connection to AISStream was made. The contents of `.env*` and environment variable values were not read and are not included in the report.
 
-Статусы в таблице:
-- **Код / тесты** — подтверждено текущей реализацией или повторным локальным запуском; само наличие исходника без выполнения отмечено отдельно.
-- **Исторически** — сообщалось в checkpoint, но в этом аудите не воспроизводилось.
-- **Частично / не подтверждено** — есть реализация, но отсутствует достаточная текущая проверка или выполнение критерия.
-- **Нет требований** — относящиеся к этой части требования в имеющихся документах отсутствуют.
+Statuses in the table:
+- **Code / tests** — confirmed by the current implementation or a repeated local run; mere presence of source without execution is noted separately.
+- **Historical** — reported in a checkpoint but not reproduced in this audit.
+- **Partial / unconfirmed** — implementation exists, but sufficient current verification or fulfillment of the criterion is missing.
+- **No requirements** — the available documents contain no requirements relevant to this part.
 
-## Матрица пользовательских историй
+## User story matrix
 
-| История | Реализация и свидетельства | Статус аудита |
+| Story | Implementation and evidence | Audit status |
 |---|---|---|
-| US-01 — карта пролива | Leaflet загружается с `ssr: false`; bounds, вид, OSM Standard и атрибуция заданы в `src/config.ts`; Leaflet-карта и тайловый слой — `src/components/LeafletMap.tsx`. `npm run build` прошёл. Открытие/обновление/resize и визуальная атрибуция записаны в checkpoint 01 (стр. 26–34), но здесь вручную не повторялись. | Реализация подтверждена кодом и сборкой; визуальные критерии исторические, не перепроверены. |
-| US-02 — демонстрационные суда | Три судна и маршруты в `src/config.ts`; на старте `demoStart`, подпись источника и маркеры реализованы в `RadarView.tsx`/`LeafletMap.tsx`. Тест «три элемента» прошёл. | Подтверждено кодом и тестом. |
-| US-03 — движение | Общий интервал 2000 мс в `src/components/RadarView.tsx`; переходы/остановка и нулевая скорость в `src/demo.ts`. Два browser-теста движения/остановки `demo-1` прошли; все маршруты заданы кодом. | Частично подтверждено тестами: автоматические сценарии движения и финиша охватывают `demo-1`; все маршруты отдельно браузерным тестом не пройдены. |
-| US-04 — карточка | Форматирование значений в `src/vessel.ts`, вывод React-текстом в `src/components/VesselCard.tsx`, выбор по id — `RadarView.tsx`. Тесты клика и повторного клика прошли. Безопасный вывод имени и формат неизвестных значений видны в коде; checkpoint 01 фиксирует ручную проверку имени `<b>Демо</b>`. | Код и выбор проверены; безопасный вывод имени подтверждён кодом и исторической ручной записью, не текущей ручной проверкой. |
-| US-05 — настоящие суда | Кнопка, экранные состояния и загрузка в `RadarView.tsx`; API Route Handler — `src/app/api/snapshot/route.ts`; та же карта/карточка. Checkpoint 04 сообщает об одном живом снимке и проверке одного MMSI. Текущий браузерный тест использует мок, не реальный endpoint/AISStream. | Код подтверждён; живая интеграция — только историческое свидетельство, не повторялась. |
-| US-06 — источник и время | Экранная подпись с числом/временем/неполнотой в `src/snapshot.ts`; метаданные в route; выбор самой свежей позиции — `src/server/reader.ts`. Свежесть и dedup проверены тестами сборщика. | Реализация и правила набора проверены локально; вид подписи — кодом/мок-тестами, не live-сценарием. |
-| US-07 — причины ошибки и пустой ответ | Фиксированные коды и сообщения в `src/server/snapshotError.ts`, состояния UI в `src/snapshot.ts`; тесты пустого ответа и ошибки интерфейса прошли. Отсутствие ключа зафиксировано checkpoint 03, сейчас маршрут не вызывался. | Код и мок-сценарии подтверждены; endpoint без ключа и live-ошибки исторические/не перепроверены. |
-| US-08 — учебная часть без ключа | Демо запускается отдельно от запроса к AISStream; ключ читается серверным `src/server/apiKey.ts`. Checkpoint 03 сообщает об успешном запросе без ключа. В текущем аудите отдельный тест «без ключа» не запускался. | Реализация подтверждена кодом; критерий без ключа имеет историческое, но не повторное доказательство. |
-| US-09 — доверие к данным | Тесты преобразователя и сборщика покрывают валидность, нулевые/неизвестные значения, свежесть, дедупликацию, окно/лимит, ошибки, отмену и очистку; все прошли. Есть расхождение по фильтрации `MessageType`, описанное ниже. | В значительной части подтверждено тестами; соответствие не полное из-за расхождения ниже и отсутствия checkpoint 05/независимой оценки diff. |
-| US-10 — самостоятельная установка | `README.md` содержит Node.js 24, `npm install`, `npm run dev` и localhost. В README нет инструкции по вводу ключа, способу проверки полного приложения и ясного перечня возможностей/ограничений, требуемых brief, US-10 (стр. 99–103). `ABOUT.md` ожидает отдельный change-request для шестого занятия, но файла нет. | **Не выполнено полностью по доступному комплекту документации.** |
+| US-01 — map of the strait | Leaflet loads with `ssr: false`; bounds, view, OSM Standard, and attribution are set in `src/config.ts`; Leaflet map and tile layer are in `src/components/LeafletMap.tsx`. `npm run build` passed. Opening/refresh/resize and visual attribution are recorded in checkpoint 01 (pp. 26–34), but were not manually repeated here. | Implementation confirmed by code and build; visual criteria are historical and were not rechecked. |
+| US-02 — demonstration vessels | Three vessels and routes in `src/config.ts`; `demoStart`, source label, and markers are implemented in `RadarView.tsx`/`LeafletMap.tsx`. The “three elements” test passed. | Confirmed by code and test. |
+| US-03 — movement | Shared 2000 ms interval in `src/components/RadarView.tsx`; transitions/stopping and zero speed in `src/demo.ts`. Two browser tests for movement/stopping of `demo-1` passed; all routes are specified in code. | Partially confirmed by tests: automated movement and finish scenarios cover `demo-1`; all routes were not separately exercised by browser tests. |
+| US-04 — card | Value formatting in `src/vessel.ts`, React text output in `src/components/VesselCard.tsx`, selection by id in `RadarView.tsx`. Click and repeated-click tests passed. Safe name output and unknown-value formatting are apparent in code; checkpoint 01 records a manual check of the name `<b>Demo</b>`. | Code and selection checked; safe name output confirmed by code and historical manual record, not a current manual check. |
+| US-05 — real vessels | Button, on-screen states, and loading in `RadarView.tsx`; API Route Handler in `src/app/api/snapshot/route.ts`; same map/card. Checkpoint 04 reports one live snapshot and a check of one MMSI. The current browser test uses a mock, not the real endpoint/AISStream. | Code confirmed; live integration has only historical evidence and was not repeated. |
+| US-06 — source and time | On-screen label with count/time/incompleteness in `src/snapshot.ts`; metadata in route; newest-position selection in `src/server/reader.ts`. Freshness and dedup were checked in collector tests. | Implementation and collection rules locally checked; label appearance confirmed by code/mock tests, not a live scenario. |
+| US-07 — error reasons and empty response | Fixed codes and messages in `src/server/snapshotError.ts`, UI states in `src/snapshot.ts`; empty-response and interface-error tests passed. Missing key is recorded in checkpoint 03; the route was not called now. | Code and mock scenarios confirmed; endpoint without a key and live errors are historical/not rechecked. |
+| US-08 — instructional use without a key | Demo runs separately from the AISStream request; key is read by server-side `src/server/apiKey.ts`. Checkpoint 03 reports a successful request without a key. A separate “without key” test was not run in this audit. | Implementation confirmed by code; the no-key criterion has historical, not repeated, evidence. |
+| US-09 — data integrity | Converter and collector tests cover validity, zero/unknown values, freshness, deduplication, window/limit, errors, cancellation, and cleanup; all passed. There is a discrepancy regarding `MessageType` filtering, described below. | Largely confirmed by tests; compliance is incomplete due to the discrepancy below and absence of checkpoint 05/independent diff review. |
+| US-10 — independent installation | `README.md` contains Node.js 24, `npm install`, `npm run dev`, and localhost. README does not include instructions for entering the key, how to verify the complete app, or a clear list of capabilities/limitations required by the brief, US-10 (pp. 99–103). `ABOUT.md` expects a separate change request for session 6, but the file is absent. | **Not fully fulfilled by the available documentation.** |
 
-## Матрица задач спринтов
+## Sprint task matrix
 
-| Задачи | Проверка соответствия |
+| Tasks | Compliance check |
 |---|---|
-| B-01 — каркас | `package.json` содержит Next 16, React 19, TypeScript 6, Leaflet и Playwright; `README.md` содержит команды запуска. Издание/установка зависимости не повторялись отдельно, но сборка выполнена. |
-| B-02 — карта | Клиентская загрузка Leaflet, район, OSM и attribution видны в коде. Build прошёл. Размер окна и визуальный рендер в этом аудите не проверялись. |
-| B-03…04 — судно, значок, выбор, карточка | Общая модель и форматирование в `src/vessel.ts`; карточка/карта — `src/components/`; тесты выбора прошли. XSS-устойчивый вывод имени — React-текстовый узел в коде, historical manual proof в checkpoint 01. |
-| B-05…06 — маршруты, движение, остановка | Три маршрута имеют 8–10 точек, движение шагает через один таймер; browser-тесты проверили перемещение, обновление карточки и финиш `demo-1`. Сборка/тесты успешны. Визуальный hot-reload и поведение каждого маршрута отдельно здесь не проверялись. |
-| B-07 — Playwright/выбор | Playwright настроен на Chromium и node-проект; браузерные тесты блокируют OSM-тайлы. Тесты выбора прошли. |
-| B-08 — ключ | `src/server/apiKey.ts` читает переменную на сервере; `.gitignore` игнорирует `.env*` с исключением `.env.example`; `.claude/settings.json` запрещает чтение `.env`, `.env.local` и `.env.*.local`. Содержимое env-файлов не проверялось; tracked-статус из-за отсутствия Git не подтверждён. Checkpoint 03 — историческое свидетельство. |
-| B-09 — Reader/endpoint | Node runtime и динамический endpoint в `src/app/api/snapshot/route.ts`; фиксированные тексты ошибок; transport/clock внедряются в `src/server/reader.ts`. Интеграцию с живым WebSocket в аудите не запускали; тесты используют fake transport. |
-| B-10 — образец/provenance | Образец и `data/samples/PROVENANCE.md` присутствуют; provenance описывает живое получение 2026-09-17. Факт исторический, не повторная проверка источника. В provenance есть утверждение о фильтрации типа сообщения, расходящееся с кодом. |
-| B-11 — преобразователь | `toVessel` выполняет проверки полей/диапазонов; тесты `tests/toVessel.synthetic.spec.ts` прошли. |
-| B-12 — сборщик | Лимит 100, окно 15 секунд, latest-by-timestamp, dedup, ошибки без partial success, abort и cleanup реализованы в `src/server/reader.ts`; соответствующие тесты `tests/reader.synthetic.spec.ts` прошли. Отсутствует локальная проверка `MessageType`, несмотря на фильтр в запросе подписки. |
-| B-13 — интерфейс R2 | Состояния и тексты в `src/snapshot.ts`/`RadarView.tsx`. Error, empty, нейтральный значок и `Нет данных` проверены браузерными моками; loading/disabled подтверждался одноразовым сценарием checkpoint 04, не включённым в постоянные тесты. Live-сопоставление AIS-судна с UI не запускалось. |
-| B-14 — тесты преобразователя | Есть литеральные ожидания для sample и синтетических случаев; suite прошёл. |
-| B-15 — тесты сборщика | Есть fake clock/transport и проверки дубликатов, порядка времени, равного времени, лимита, окна, ошибок, отмены, полной замены объекта и cleanup; suite прошёл. |
-| B-16 — тесты движения/UI | Тесты `page.clock` проверяют движение/остановку; UI error/empty/unknown speed/course тестируется с mock endpoint; suite прошёл. |
-| B-17 — разбор/review/checkpoint 05 | `docs/checkpoints/CHECKPOINT-05.md` отсутствует, а Git diff к checkpoint 04 недоступен. Настоящий аудит зафиксировал наблюдения, но нельзя подтвердить запись результатов B-17 в предусмотренном checkpoint, выполнение требуемого сравнения diff или независимый review с критериями спринта. | Не подтверждено / checkpoint не представлен. |
-| B-18…B-21 / R4 | `ABOUT.md` описывает занятие 6, релиз R4 и change request `SPRINT-03b-CHANGE-REQUEST.md`, но этот файл отсутствует в `docs/tasks/`. Критерии задач не доступны, соответствие оценить невозможно. | Не подлежит оценке по имеющимся требованиям. |
+| B-01 — scaffold | `package.json` contains Next 16, React 19, TypeScript 6, Leaflet, and Playwright; `README.md` contains run commands. Dependency installation was not repeated separately, but the build was run. |
+| B-02 — map | Client-side Leaflet loading, area, OSM, and attribution are visible in code. Build passed. Window size and visual rendering were not checked in this audit. |
+| B-03…04 — vessel, icon, selection, card | Shared model and formatting in `src/vessel.ts`; card/map in `src/components/`; selection tests passed. XSS-safe name output is a React text node in code, with historical manual proof in checkpoint 01. |
+| B-05…06 — routes, movement, stopping | Three routes have 8–10 points; movement advances via one timer; browser tests checked movement, card update, and `demo-1` finish. Build/tests passed. Visual hot reload and each route individually were not checked here. |
+| B-07 — Playwright/selection | Playwright is configured for Chromium and node project; browser tests block OSM tiles. Selection tests passed. |
+| B-08 — key | `src/server/apiKey.ts` reads the variable on the server; `.gitignore` ignores `.env*` except `.env.example`; `.claude/settings.json` prohibits reading `.env`, `.env.local`, and `.env.*.local`. Env-file contents were not checked; tracked status cannot be confirmed because Git is unavailable. Checkpoint 03 is historical evidence. |
+| B-09 — Reader/endpoint | Node runtime and dynamic endpoint in `src/app/api/snapshot/route.ts`; fixed error text; transport/clock are injected in `src/server/reader.ts`. Live WebSocket integration was not run in the audit; tests use fake transport. |
+| B-10 — sample/provenance | Sample and `data/samples/PROVENANCE.md` are present; provenance describes live retrieval on 2026-09-17. This is historical, not a repeated source check. Provenance contains a claim about message-type filtering that conflicts with the code. |
+| B-11 — converter | `toVessel` validates fields/ranges; tests `tests/toVessel.synthetic.spec.ts` passed. |
+| B-12 — collector | Limit 100, 15-second window, latest-by-timestamp, dedup, errors without partial success, abort, and cleanup are implemented in `src/server/reader.ts`; corresponding tests `tests/reader.synthetic.spec.ts` passed. No local check of `MessageType` is present despite the filter in the subscription request. |
+| B-13 — R2 interface | States and text in `src/snapshot.ts`/`RadarView.tsx`. Error, empty, neutral icon, and `No data` were checked with browser mocks; loading/disabled were confirmed in a one-off checkpoint 04 scenario, not in permanent tests. Live matching of AIS vessel to UI was not run. |
+| B-14 — converter tests | Literal expectations exist for the sample and synthetic cases; suite passed. |
+| B-15 — collector tests | Fake clock/transport and checks for duplicates, time ordering, equal time, limit, window, errors, cancellation, full object replacement, and cleanup; suite passed. |
+| B-16 — movement/UI tests | `page.clock` tests check movement/stopping; UI error/empty/unknown speed/course is tested against a mock endpoint; suite passed. |
+| B-17 — analysis/review/checkpoint 05 | `docs/checkpoints/CHECKPOINT-05.md` is absent, and Git diff against checkpoint 04 is unavailable. This audit recorded observations, but cannot confirm that B-17 results were entered in the prescribed checkpoint, that the required diff comparison was completed, or that an independent review used the sprint criteria. | Unconfirmed / checkpoint not provided. |
+| B-18…B-21 / R4 | `ABOUT.md` describes session 6, release R4, and change request `SPRINT-03b-CHANGE-REQUEST.md`, but that file is absent from `docs/tasks/`. Task criteria are unavailable, so compliance cannot be assessed. | Cannot be assessed against the available requirements. |
 
-## Подтверждённое расхождение
+## Confirmed discrepancy
 
-`docs/tasks/SPRINT-02.md` задаёт `FilterMessageTypes: ['PositionReport']` для подписки. Это ограничивает типы, запрошенные у источника, но локальный код сам тип кадра не проверяет: `src/server/reader.ts:215-218` передаёт всякий JSON в `toVessel`, а `src/server/toVessel.ts:155-157` явно говорит, что тип кадра не проверяется. Если кадр иного типа содержит подходящие `MetaData` и `Message.PositionReport`, он может быть принят. `data/samples/PROVENANCE.md:43` утверждает, что reader отбрасывает кадры с `MessageType` не `PositionReport`; это утверждение не соответствует текущей реализации. Тестовый генератор `tests/reader.synthetic.spec.ts:114-135` всегда формирует `MessageType: 'PositionReport'`, поэтому такой случай тестами не покрыт.
+`docs/tasks/SPRINT-02.md` specifies `FilterMessageTypes: ['PositionReport']` for the subscription. This limits the types requested from the source, but the local code does not itself check frame type: `src/server/reader.ts:215-218` passes every JSON object to `toVessel`, and `src/server/toVessel.ts:155-157` explicitly says the frame type is not checked. If a frame of another type contains suitable `MetaData` and `Message.PositionReport`, it may be accepted. `data/samples/PROVENANCE.md:43` claims that the reader discards frames whose `MessageType` is not `PositionReport`; this claim does not match the current implementation. The test generator `tests/reader.synthetic.spec.ts:114-135` always produces `MessageType: 'PositionReport'`, so this case is not covered by tests.
 
-Это наблюдение не утверждает, что текущий AISStream обычно нарушает фильтр подписки; это конкретное расхождение реализации/провенанса и недостающая защита от неожиданного кадра. Исправление в рамках аудита не вносилось.
+This observation does not claim that AISStream commonly violates the subscription filter; it identifies a specific implementation/provenance discrepancy and missing protection against an unexpected frame. No fix was made as part of the audit.
 
-## Документация и предыдущие checkpoints
+## Documentation and previous checkpoints
 
-- Доступны три файла требований спринтов. `ABOUT.md` ссылается на отсутствующий `docs/tasks/SPRINT-03b-CHANGE-REQUEST.md` и на `docs/checkpoints/TEMPLATE.md`; фактическое имя шаблона — `CHECKPOINT_TEMPLATE.md`.
-- Checkpoints 01–04 являются историческими записями, а не результатом текущего прогона. Checkpoint 04 (2026-09-21) отмечал пробелы по UI error/empty/limit, повторной загрузке, AIS-движению и управляемым тестам сборщика; текущая папка теперь содержит несколько соответствующих тестов и локальный прогон прошёл.
-- Checkpoint 04 сообщает прежнюю сборку и три теста, но текущий `npm test` обнаружил и выполнил 36 тестов. Это не подтверждает, когда именно добавлялись тесты и был ли завершён предусмотренный B-17 review.
-- `README.md` недостаточен как финальная инструкция для US-10: в нём нет настройки ключа и описания возможностей/ограничений.
-- Требование Node.js 24 указано в README/спринте; текущий локальный runtime — Node `v25.8.1`, npm `11.11.0`. Следовательно, успешные build/test получены не на целевой версии Node 24. Checkpoint 01 отдельно записывал Node 22.16.0.
+- Three sprint-requirements files are available. `ABOUT.md` refers to missing `docs/tasks/SPRINT-03b-CHANGE-REQUEST.md` and `docs/checkpoints/TEMPLATE.md`; the actual template filename is `CHECKPOINT_TEMPLATE.md`.
+- Checkpoints 01–04 are historical records, not results of the current run. Checkpoint 04 (2026-09-21) noted gaps in UI error/empty/limit, repeated loading, AIS movement, and controlled collector tests; the current folder now contains several corresponding tests and the local run passed.
+- Checkpoint 04 reports the earlier build and three tests, but the current `npm test` discovered and ran 36 tests. This does not confirm exactly when the tests were added or whether the B-17 review was completed.
+- `README.md` is insufficient as final US-10 instructions: it lacks key setup and a description of capabilities/limitations.
+- Node.js 24 is required by the README/sprint; the current local runtime is Node `v25.8.1`, npm `11.11.0`. Therefore successful build/test were obtained on a Node version other than target Node 24. Checkpoint 01 separately recorded Node 22.16.0.
 
-## Команды и результаты текущего аудита
+## Commands and current audit results
 
-- `npm run build` → успешно; Next.js 16.3.4 собрал приложение, TypeScript завершился без ошибок, `/api/snapshot` отображён как dynamic route.
-- `npm test` → **36 passed, 0 failed** (Playwright; Chromium и node-проект).
+- `npm run build` → successful; Next.js 16.3.4 built the application, TypeScript completed without errors, `/api/snapshot` appeared as a dynamic route.
+- `npm test` → **36 passed, 0 failed** (Playwright; Chromium and node project).
 - `node --version` → `v25.8.1`.
 - `npm --version` → `11.11.0`.
-- Живой AISStream-запрос, проверка настоящего ключа, ручной просмотр карты, resize/обновление страницы и повторная установка на чистом ноутбуке не выполнялись.
+- No live AISStream request, real-key check, manual map review, resize/page-refresh check, or clean-laptop reinstall was performed.
 
-## Итог
+## Conclusion
 
-Кодовая база доступных требований R1–R3 в основном реализована; локальные production build и имеющийся набор тестов проходят. Это **не равнозначно полной приёмке**: целевая Node 24 не использовалась; US-10 не закрыта имеющейся инструкцией; B-17/checkpoint 05 отсутствует; R4/B-18…B-21 нельзя оценить из-за отсутствующего change request; часть визуальных и live-проверок осталась только исторической или не выполнена. Также следует устранить либо явно принять расхождение фильтра `MessageType` и обновить противоречивый provenance.
+The codebase largely implements available R1–R3 requirements; the local production build and available test suite pass. This is **not equivalent to full acceptance**: target Node 24 was not used; US-10 is not covered by the available instructions; B-17/checkpoint 05 is absent; R4/B-18…B-21 cannot be assessed because the change request is missing; some visual and live checks remain historical or unperformed. The `MessageType` filtering discrepancy should also be resolved or explicitly accepted, and the contradictory provenance should be updated.

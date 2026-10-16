@@ -1,7 +1,7 @@
 /**
- * Демонстрационные суда: сборка структуры судна из маршрутов конфигурации.
- * Маршруты здесь не вычисляются и не достраиваются — точки берутся такими,
- * какими они записаны литералами в config.ts.
+ * Demo vessels: assembling a vessel structure from the configuration's
+ * routes. Routes aren't computed or extended here — points are used exactly
+ * as written, as literals, in config.ts.
  */
 
 import type { DemoRoute, RoutePoint } from "@/config";
@@ -12,12 +12,13 @@ import { toVesselName } from "@/vessel";
 const DEG = Math.PI / 180;
 
 /**
- * Начальный азимут отрезка по большому кругу: под каким курсом судно выходит
- * из точки `from`, чтобы прийти в `to`. На большом круге курс вдоль отрезка
- * меняется, поэтому «начальный» — не уточнение, а часть определения.
+ * The initial bearing of a great-circle segment: the course a vessel leaves
+ * point `from` on to arrive at `to`. Along a great circle the course changes
+ * over the segment, so "initial" isn't a qualifier — it's part of the
+ * definition.
  *
- * Результат нормализуется в [0, 360): именно этот диапазон обещает поле
- * `courseDeg`, а atan2 возвращает значение в [-180, 180].
+ * The result is normalized to [0, 360): that's exactly the range the
+ * `courseDeg` field promises, while atan2 returns a value in [-180, 180].
  */
 export function bearingDeg(from: RoutePoint, to: RoutePoint): number {
   const fromLat = from.lat * DEG;
@@ -34,15 +35,16 @@ export function bearingDeg(from: RoutePoint, to: RoutePoint): number {
 }
 
 /**
- * Судно на точке `index` своего маршрута.
+ * A vessel at point `index` of its route.
  *
- * Курс — азимут отрезка, которым судно пришло в эту точку: на старте отрезка
- * ещё нет, поэтому берётся направление к следующей точке; дальше — от
- * предыдущей точки к текущей. На последней точке курс тем самым сохраняет
- * последнее значение сам собой.
+ * Course is the bearing of the segment the vessel arrived on: at the start
+ * of the route there is no such segment yet, so the direction to the next
+ * point is used; afterward it's from the previous point to the current one.
+ * At the final point, course therefore keeps its last value automatically.
  *
- * Скорость на последней точке — `0`: судно пришло и стоит. Это именно ноль, а
- * не `null`, — значение известно, и карточка покажет «0 уз», а не «Нет данных».
+ * Speed at the final point is `0`: the vessel has arrived and is stationary.
+ * It's specifically zero, not `null` — the value is known, and the card will
+ * show "0 kn," not "No data."
  */
 function vesselAt(demo: DemoRoute, index: number, timestamp: string): Vessel {
   const last = demo.route.length - 1;
@@ -67,19 +69,19 @@ function vesselAt(demo: DemoRoute, index: number, timestamp: string): Vessel {
 }
 
 /**
- * Состояние демонстрации: номер шага и суда на этом шаге. Суда хранятся
- * рядом с шагом, а не вычисляются при каждом рендере, чтобы пришедшее судно
- * можно было вернуть той же ссылкой — см. `stepDemo`.
+ * Demo state: the step number and the vessels at that step. Vessels are
+ * stored alongside the step rather than recomputed on every render, so that
+ * an arrived vessel can be returned by the same reference — see `stepDemo`.
  */
 export type DemoState = {
   readonly step: number;
   readonly vessels: readonly Vessel[];
 };
 
-/** Шаг, на котором последнее судно приходит на свою конечную точку. */
+/** The step at which the last vessel reaches its final point. */
 const LAST_STEP = Math.max(...DEMO_ROUTES.map((demo) => demo.route.length - 1));
 
-/** Начало демонстрации: все суда на первой точке своего маршрута. */
+/** The start of the demo: all vessels at the first point of their route. */
 export function demoStart(timestamp: string = DEMO_START_TIME): DemoState {
   return {
     step: 0,
@@ -88,17 +90,19 @@ export function demoStart(timestamp: string = DEMO_START_TIME): DemoState {
 }
 
 /**
- * Следующий шаг демонстрации. Время — момент этого тика, одно на все суда.
+ * The next demo step. The time is the moment of this tick, the same for all
+ * vessels.
  *
- * Судно, уже пришедшее на последнюю точку, возвращается прежней ссылкой:
- * «дальше судно не меняется» относится и к его времени сообщения тоже. Иначе у
- * стоящего судна `timestamp` тикал бы каждые две секунды, хотя никакого нового
- * сообщения о нём не появлялось. Маршруты разной длины, поэтому суда приходят
- * на разных тиках, и каждое замирает на своём.
+ * A vessel that has already reached its final point is returned by the same
+ * reference: "the vessel no longer changes" applies to its message time too.
+ * Otherwise a stationary vessel's `timestamp` would tick every two seconds
+ * even though no new message about it ever appeared. Routes have different
+ * lengths, so vessels arrive on different ticks, and each one freezes on its
+ * own.
  *
- * Когда пришли все, возвращается прежнее состояние целиком, той же ссылкой:
- * React сравнивает состояние по ссылке и просто не перерисует экран, так что
- * дальнейшие тики становятся холостыми.
+ * Once all have arrived, the previous state is returned in full, by the same
+ * reference: React compares state by reference and simply won't re-render,
+ * so further ticks become no-ops.
  */
 export function stepDemo(current: DemoState, timestamp: string): DemoState {
   if (current.step >= LAST_STEP) {
@@ -111,9 +115,9 @@ export function stepDemo(current: DemoState, timestamp: string): DemoState {
     step,
     vessels: DEMO_ROUTES.map((demo, i) => {
       const last = demo.route.length - 1;
-      // Судно уже стояло на конечной точке до этого тика — не трогаем его.
-      // Тик, которым оно приходит (step === last), проходит обычным путём:
-      // именно на нём скорость становится нулём.
+      // The vessel was already at its final point before this tick — leave
+      // it alone. The tick it arrives on (step === last) goes through the
+      // normal path — that's exactly when speed becomes zero.
       if (current.step >= last) {
         return current.vessels[i];
       }
