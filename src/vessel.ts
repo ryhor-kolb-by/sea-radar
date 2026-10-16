@@ -1,17 +1,17 @@
 /**
- * Одна структура судна — общая для демонстрационных и настоящих данных.
- * Полей ровно столько, сколько согласовано в SPRINT-01.
+ * A single vessel structure, shared by demo and real data. It has exactly
+ * the fields agreed in SPRINT-01.
  */
 
-/** Откуда пришло сообщение о судне. */
+/** Where the vessel message came from. */
 export type VesselSource = "demo" | "aisstream";
 
 export type Vessel = {
   readonly id: string;
 
   /**
-   * Название приходит от экипажа: может отсутствовать и может содержать что
-   * угодно. Показывается только как текст, никогда как HTML.
+   * The name comes from the crew: it may be absent and may contain anything.
+   * Display it only as text, never as HTML.
    */
   readonly name: string | null;
 
@@ -19,34 +19,35 @@ export type Vessel = {
   readonly lon: number;
 
   /**
-   * Скорость и курс: `null` — значения нет в сообщении, и это не то же самое,
-   * что `0`. Поэтому `| null`, а не `?` — компилятор заставит различить
-   * «стоит» (`0`) и «неизвестно» (`null`) в каждом месте, где значение читают.
-   * Курс движения (не направление носа) в диапазоне [0, 360).
+   * Speed and course: `null` means the value is absent from the message,
+   * which is not the same as `0`. Hence `| null` rather than `?` — the
+   * compiler forces every read site to distinguish "stationary" (`0`) from
+   * "unknown" (`null`).
+   * Course over ground (not heading), in the range [0, 360).
    */
   readonly speedKnots: number | null;
   readonly courseDeg: number | null;
 
-  /** Время сообщения: ISO 8601 с зоной. */
+  /** Message timestamp: ISO 8601 with a zone. */
   readonly timestamp: string;
 
   readonly source: VesselSource;
 };
 
 /**
- * Название судна из сообщения. Пустая строка — это не название, а его
- * отсутствие, поэтому превращается в `null`.
+ * A vessel name from the message. An empty string is not a name but its
+ * absence, so it becomes `null`.
  */
 export function toVesselName(raw: string): string | null {
   return raw === "" ? null : raw;
 }
 
-/** Текст вместо любого неизвестного значения. */
-export const NO_DATA = "Нет данных";
+/** Text shown in place of any unknown value. */
+export const NO_DATA = "No data";
 
-/** Подписи источников для карточки. */
+/** Source labels for the card. */
 const SOURCE_TEXT: Record<VesselSource, string> = {
-  demo: "Демонстрационные данные",
+  demo: "Demo data",
   aisstream: "AISStream",
 };
 
@@ -54,41 +55,41 @@ export function formatSource(source: VesselSource): string {
   return SOURCE_TEXT[source];
 }
 
-/** Координаты: ровно 5 знаков, хвостовые нули сохраняются. */
+/** Coordinates: exactly 5 decimal places, trailing zeros kept. */
 export function formatPosition(lat: number, lon: number): string {
   return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
 }
 
 /**
- * Скорость: до одной десятой, но без хвостового нуля — «12.3 уз», «12 уз»,
- * «0 уз». `0` — это стоящее судно, а не отсутствие данных, поэтому проверяется
- * именно `null`, а не ложность значения.
+ * Speed: up to one decimal place, but without a trailing zero — "12.3 kn",
+ * "12 kn", "0 kn". `0` is a stationary vessel, not missing data, so the check
+ * is specifically for `null`, not for a falsy value.
  */
 export function formatSpeed(speedKnots: number | null): string {
   if (speedKnots === null) {
     return NO_DATA;
   }
 
-  // Округление даёт максимум один знак; Number снимает хвостовой ноль
-  // («12.0» → «12»), а целые значения оставляет как есть.
+  // Rounding gives at most one decimal place; Number strips a trailing zero
+  // ("12.0" → "12"), while integer values are left as-is.
   const rounded = Number(speedKnots.toFixed(1));
-  return `${rounded} уз`;
+  return `${rounded} kn`;
 }
 
-/** Курс: целые градусы в диапазоне [0, 360) со знаком градуса. */
+/** Course: whole degrees in the range [0, 360), with a degree sign. */
 export function formatCourse(courseDeg: number | null): string {
   if (courseDeg === null) {
     return NO_DATA;
   }
 
-  // % 360 нужен из-за округления: 359.7 округляется в 360, а это тот же 0.
+  // % 360 is needed because of rounding: 359.7 rounds to 360, which is the same as 0.
   return `${Math.round(courseDeg) % 360}°`;
 }
 
 /**
- * Время сообщения как «12:00:00 UTC». Время берётся в UTC, а не в зоне
- * браузера: сообщение о судне не зависит от того, где открыли страницу.
- * Нераспознанный timestamp — неизвестное значение, а не «Invalid Date».
+ * Message time as "12:00:00 UTC". Taken in UTC, not the browser's zone: a
+ * vessel message doesn't depend on where the page was opened. An
+ * unparseable timestamp is an unknown value, not "Invalid Date".
  */
 export function formatTimestamp(timestamp: string): string {
   const parsed = new Date(timestamp);
@@ -100,7 +101,7 @@ export function formatTimestamp(timestamp: string): string {
   return `${time} UTC`;
 }
 
-/** Название: отсутствующее — «Нет данных». Вывод только как текст. */
+/** Name: missing becomes "No data". Output only as text. */
 export function formatName(name: string | null): string {
   return name === null ? NO_DATA : name;
 }

@@ -16,8 +16,8 @@ import {
 import VesselCard from "@/components/VesselCard";
 
 /**
- * Экран Sea Radar. Карта подключается с ssr: false — иначе Leaflet исполнился
- * бы при серверном рендеринге и упал на обращении к window.
+ * The Sea Radar screen. The map is loaded with ssr: false — otherwise
+ * Leaflet would run during server rendering and crash on accessing window.
  */
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
@@ -25,89 +25,96 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
 
 export default function RadarView() {
   /**
-   * Выбор хранится идентификатором, а не объектом судна: карта и карточка
-   * читают судно из одного места, поэтому не могут разойтись.
+   * The selection is stored as an id, not a vessel object: the map and the
+   * card read the vessel from the same place, so they can't diverge.
    */
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   /**
-   * Состояние демонстрации. Инициализатор — функция: иначе demoStart() вызывался
-   * бы на каждом рендере, а не только на первом. Время старта здесь литеральное;
-   * настоящее проставляется в эффекте ниже, уже в браузере.
+   * Demo state. The initializer is a function: otherwise demoStart() would
+   * run on every render, not only the first. The start time here is a
+   * literal; the real one is set in the effect below, already in the
+   * browser.
    */
   const [demo, setDemo] = useState(demoStart);
 
   /**
-   * Что показано сейчас. Одно состояние на весь экран, а не набор флагов
-   * «идёт загрузка», «была ошибка», «есть данные»: последние два могли бы
-   * оказаться истинными одновременно, и экран показал бы и суда, и ошибку.
-   * Показан всегда результат последней попытки, и никакой другой.
+   * What's currently shown. One state for the whole screen, rather than a
+   * set of flags like "loading," "had an error," "has data": the last two
+   * could end up true at the same time, and the screen would show both
+   * vessels and an error. What's shown is always the result of the last
+   * attempt, and nothing else.
    */
   const [screen, setScreen] = useState<Screen>({ kind: "idle-demo" });
 
   /**
-   * Счётчик возвратов карты к начальному виду. Растёт только на первом непустом
-   * успехе: заказчик просил показать пришедшие суда, но не хотел, чтобы карту
-   * дёргало при каждой следующей загрузке.
+   * Counter for resetting the map to its initial view. It only increments on
+   * the first non-empty success: the customer asked to show arrived vessels,
+   * but didn't want the map to jump on every subsequent load.
    */
   const [viewResetKey, setViewResetKey] = useState(0);
 
-  /** Первый непустой успех уже был — дальше вид карты не трогаем. */
+  /** The first non-empty success has already happened — don't touch the map view further. */
   const centeredRef = useRef(false);
 
-  // Демонстрация идёт, пока её не сменил результат загрузки. Флаг читается
-  // эффектом таймера, поэтому живёт в ref: от него не должен перезапускаться
-  // сам эффект.
+  // The demo runs until a load result replaces it. The flag is read by the
+  // timer effect, so it lives in a ref: it shouldn't cause the effect itself
+  // to restart.
   const demoRunningRef = useRef(true);
   demoRunningRef.current = screen.kind === "idle-demo";
 
   useEffect(() => {
-    // Момент запуска таймера — это и есть время сообщения на стартовой точке.
-    // Ставится здесь, а не в теле рендера: на сервере время другое, и разметка
-    // не совпала бы при гидратации.
+    // The moment the timer starts is the message time at the starting point.
+    // Set here, not in the render body: the server has a different time, and
+    // the markup wouldn't match during hydration.
     setDemo(demoStart(new Date().toISOString()));
 
-    // Один таймер на все суда: тик общий, внутри шага пересчитываются сразу
-    // все. Таймера на судно нет — иначе суда разъехались бы по времени.
+    // One timer for all vessels: the tick is shared, and all vessels are
+    // recalculated together within a step. There's no per-vessel timer —
+    // otherwise vessels would drift apart in time.
     const timer = setInterval(() => {
-      // После нажатия кнопки демонстрация остановлена: тик становится холостым.
-      // Настоящие суда этот таймер не двигает вовсе — он знает только demo.
+      // After the button is clicked, the demo is stopped: the tick becomes a
+      // no-op. This timer never moves real vessels at all — it only knows
+      // about the demo.
       if (!demoRunningRef.current) {
         return;
       }
 
-      // Время берётся в момент тика, а не заранее, и передаётся в шаг —
-      // stepDemo остаётся чистой функцией без обращения к часам.
+      // Time is taken at the moment of the tick, not in advance, and passed
+      // into the step — stepDemo stays a pure function with no clock access.
       const now = new Date().toISOString();
       setDemo((current) => stepDemo(current, now));
     }, DEMO_TICK_MS);
 
-    // Снятие таймера при уходе со страницы и перед повторным запуском эффекта.
-    // В разработке React вызывает эффект дважды — без этой строки остались бы
-    // два интервала, и суда шли бы вдвое быстрее.
+    // Clear the timer when leaving the page and before the effect reruns. In
+    // development React invokes the effect twice — without this line there
+    // would be two intervals, and vessels would move twice as fast.
     return () => {
       clearInterval(timer);
     };
   }, []);
 
-  // Повторный клик по выбранному судну выбор не меняет. Здесь это выходит само:
-  // тот же id даёт то же состояние, и React не перерисовывает карточку.
+  // Clicking the already-selected vessel again doesn't change the selection.
+  // This falls out naturally here: the same id gives the same state, and
+  // React doesn't re-render the card.
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
   }, []);
 
   /**
-   * Загрузка снимка. Кнопка заблокирована на всё время запроса, поэтому второй
-   * одновременной загрузки быть не может, а с ней и гонки двух ответов.
+   * Loading a snapshot. The button is disabled for the whole request, so a
+   * second simultaneous load can't happen, and with it, no race between two
+   * responses.
    *
-   * Набор прошлой попытки не сохраняется ни при ошибке, ни при пустом ответе:
-   * состояние заменяется целиком, и на карте остаётся ровно результат этой
-   * попытки. Показать суда прошлой загрузки рядом с сообщением об ошибке
-   * значило бы выдать старые позиции за нынешние.
+   * The previous attempt's set isn't kept on either error or an empty
+   * response: the state is replaced entirely, and the map ends up showing
+   * exactly this attempt's result. Showing the previous load's vessels next
+   * to an error message would pass off old positions as current.
    */
   const handleLoad = useCallback(async () => {
-    // Демонстрация убирается сразу, до ответа: суда, выбор и карточка уходят с
-    // экрана в момент нажатия, а не после возврата с сервера.
+    // The demo is cleared immediately, before the response: vessels,
+    // selection, and the card leave the screen the moment the button is
+    // clicked, not after the server responds.
     setScreen({ kind: "loading" });
     setSelectedId(null);
 
@@ -118,7 +125,7 @@ export default function RadarView() {
 
       setScreen(next);
 
-      // Возврат к начальному виду — только на первом непустом успехе.
+      // Reset to the initial view only on the first non-empty success.
       if (
         next.kind === "loaded" &&
         next.snapshot.count > 0 &&
@@ -128,20 +135,23 @@ export default function RadarView() {
         setViewResetKey((key) => key + 1);
       }
     } catch {
-      // Ответа нет вовсе — сеть или разбор тела. Текста от сервера в этом
-      // случае не существует, поэтому берётся та же фраза, что он отдаёт для
-      // внутренней ошибки: на экране это одинаково «попытка не удалась».
+      // There's no response at all — a network or body-parsing failure. The
+      // server has no text to offer in this case, so the same phrase it
+      // uses for an internal error is used here: on screen it's equally
+      // "the attempt failed."
       setScreen(toScreen(null));
     }
   }, []);
 
-  // Суда на карте: демонстрационные, пока не было ни одной попытки, дальше —
-  // только набор последней. При загрузке, ошибке и пустом ответе он пуст.
+  // Vessels on the map: demo ones until there's been any attempt, after that
+  // only the latest set. While loading, on error, and on an empty response
+  // it's empty.
   const vessels =
     screen.kind === "idle-demo" ? demo.vessels : screenVessels(screen);
 
-  // Карточка показывается только для судна из текущего набора. Отдельного
-  // сброса карточки не нужно: набор пуст — искать не в чем, и карточки нет.
+  // The card is shown only for a vessel from the current set. No separate
+  // reset of the card is needed: an empty set means there's nothing to find,
+  // so there's no card.
   const selected =
     vessels.find((vessel) => vessel.id === selectedId) ?? null;
 
@@ -154,7 +164,7 @@ export default function RadarView() {
         onSelect={handleSelect}
         viewResetKey={viewResetKey}
       />
-      {/* Порядок в панели: кнопка, подпись источника, сообщение, карточка. */}
+      {/* Panel order: load button, source label, notice, then vessel card. */}
       <aside className="panel">
         <button
           type="button"

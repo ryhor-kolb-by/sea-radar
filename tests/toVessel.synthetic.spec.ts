@@ -12,7 +12,7 @@ function syntheticSample(): SyntheticReport {
   return structuredClone(sample) as SyntheticReport;
 }
 
-test('сохранённый образец преобразуется в судно с ожидаемыми полями', () => {
+test('Saved sample converts to a vessel with the expected fields', () => {
   const vessel = toVessel(sample);
 
   expect(vessel).not.toBeNull();
@@ -26,56 +26,56 @@ test('сохранённый образец преобразуется в суд
   });
 });
 
-test('синтетический вариант без названия даёт null в имени', () => {
+test('Synthetic report without a name returns null for the name', () => {
   const report = syntheticSample();
   delete report.MetaData.ShipName;
 
   expect(toVessel(report)?.name).toBe(null);
 });
 
-test('синтетический вариант с названием из пробелов даёт null в имени', () => {
+test('Synthetic report with a whitespace-only name returns null for the name', () => {
   const report = syntheticSample();
   report.MetaData.ShipName = '   ';
 
   expect(toVessel(report)?.name).toBe(null);
 });
 
-test('синтетическая нулевая скорость сохраняется как 0', () => {
+test('Synthetic zero speed is preserved as 0', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Sog = 0;
 
   expect(toVessel(report)?.speedKnots).toBe(0);
 });
 
-test('синтетическая скорость 102.3 даёт null', () => {
+test('Synthetic speed 102.3 returns null', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Sog = 102.3;
 
   expect(toVessel(report)?.speedKnots).toBe(null);
 });
 
-test('синтетическая скорость -1 даёт null', () => {
+test('Synthetic speed -1 returns null', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Sog = -1;
 
   expect(toVessel(report)?.speedKnots).toBe(null);
 });
 
-test('синтетический вариант без скорости даёт null', () => {
+test('Synthetic report without speed returns null', () => {
   const report = syntheticSample();
   delete report.Message.PositionReport.Sog;
 
   expect(toVessel(report)?.speedKnots).toBe(null);
 });
 
-test('синтетический курс 360 даёт null', () => {
+test('Synthetic course 360 returns null', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Cog = 360;
 
   expect(toVessel(report)?.courseDeg).toBe(null);
 });
 
-test('синтетические координаты 91/181 отбрасывают позицию', () => {
+test('Synthetic coordinates 91/181 reject the position', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Latitude = 91;
   report.Message.PositionReport.Longitude = 181;
@@ -83,7 +83,7 @@ test('синтетические координаты 91/181 отбрасыва�
   expect(toVessel(report)).toBe(null);
 });
 
-test('синтетические координаты 95/-200 отбрасывают позицию', () => {
+test('Synthetic coordinates 95/-200 reject the position', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Latitude = 95;
   report.Message.PositionReport.Longitude = -200;
@@ -91,28 +91,28 @@ test('синтетические координаты 95/-200 отбрасыва
   expect(toVessel(report)).toBe(null);
 });
 
-test('синтетическая координата-строка отбрасывает позицию', () => {
+test('Synthetic string coordinate rejects the position', () => {
   const report = syntheticSample();
   report.Message.PositionReport.Latitude = '51.03990833333333';
 
   expect(toVessel(report)).toBe(null);
 });
 
-test('синтетический вариант без MMSI отбрасывает позицию', () => {
+test('Synthetic report without MMSI rejects the position', () => {
   const report = syntheticSample();
   delete report.MetaData.MMSI;
 
   expect(toVessel(report)).toBe(null);
 });
 
-test('синтетический вариант с пустым MMSI отбрасывает позицию', () => {
+test('Synthetic report with an empty MMSI rejects the position', () => {
   const report = syntheticSample();
   report.MetaData.MMSI = '';
 
   expect(toVessel(report)).toBe(null);
 });
 
-test('синтетическое непарсимое время отбрасывает позицию', () => {
+test('Synthetic unparseable timestamp rejects the position', () => {
   const report = syntheticSample();
   report.MetaData.time_utc = 'not-a-time';
 

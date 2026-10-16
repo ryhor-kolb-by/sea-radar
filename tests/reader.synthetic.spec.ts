@@ -153,7 +153,7 @@ function expectResourcesClosed(transport: FakeTransport, clock: FakeClock): void
   expect(clock.pendingCount).toBe(0);
 }
 
-test('синтетические дубли A дают один объект', async () => {
+test('Duplicate synthetic reports for A produce one entry', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   const report = positionReport(1001, '2026-01-01T12:00:00Z', P1.lat, P1.lon);
@@ -174,7 +174,7 @@ test('синтетические дубли A дают один объект', a
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическая более свежая P2 остаётся после старого сообщения P1', async () => {
+test('Newer synthetic P2 remains after an older P1 report', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   transport.emitMessage(
@@ -197,7 +197,7 @@ test('синтетическая более свежая P2 остаётся п�
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетические равные метки оставляют первую позицию', async () => {
+test('Equal synthetic timestamps keep the first position', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   transport.emitMessage(
@@ -217,7 +217,7 @@ test('синтетические равные метки оставляют пе
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетические 100 уникальных судов завершают сбор, 101-е не принято', async () => {
+test('100 unique synthetic vessels end collection; the 101st is rejected', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   for (let index = 0; index < 100; index += 1) {
@@ -243,7 +243,7 @@ test('синтетические 100 уникальных судов завер�
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетические 100 сообщений одного судна ждут конца окна', async () => {
+test('100 reports for one synthetic vessel wait until the collection window ends', async () => {
   const { transport, clock, result } = setup();
   let completed = false;
   void result.then(() => {
@@ -274,7 +274,7 @@ test('синтетические 100 сообщений одного судна 
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическое живое соединение без сообщений даёт пустой успех по окну', async () => {
+test('Live synthetic connection without messages succeeds with an empty result at window end', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   clock.advanceBy(WINDOW_MS);
@@ -292,7 +292,7 @@ test('синтетическое живое соединение без сооб
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическое соединение без open к концу срока даёт connect_failed', async () => {
+test('Synthetic connection without open fails when the window ends', async () => {
   const { transport, clock, result } = setup();
   clock.advanceBy(WINDOW_MS);
 
@@ -301,7 +301,7 @@ test('синтетическое соединение без open к концу 
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическая ошибка сокета до open даёт connect_failed сразу', async () => {
+test('Synthetic socket error before open fails immediately', async () => {
   const { transport, clock, result } = setup();
   transport.emitError();
 
@@ -310,7 +310,7 @@ test('синтетическая ошибка сокета до open даёт co
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическая ошибка провайдера после трёх сообщений не возвращает их успехом', async () => {
+test('Synthetic provider error after three reports does not return them as success', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   for (let index = 0; index < 3; index += 1) {
@@ -325,7 +325,7 @@ test('синтетическая ошибка провайдера после т
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетический разрыв после трёх сообщений не возвращает их успехом', async () => {
+test('Synthetic disconnect after three reports does not return them as success', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   for (let index = 0; index < 3; index += 1) {
@@ -340,7 +340,7 @@ test('синтетический разрыв после трёх сообщен
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическая ошибка после лимита не меняет успех и не завершает второй раз', async () => {
+test('Synthetic error after reaching the limit does not change success or complete twice', async () => {
   const { transport, clock, result } = setup();
   let completions = 0;
   const observed = result.then((snapshot) => {
@@ -365,7 +365,7 @@ test('синтетическая ошибка после лимита не ме�
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетическая отмена до конца окна оставляет результат незавершённым', async () => {
+test('Synthetic cancellation before window end leaves the result pending', async () => {
   const { transport, clock, controller, result } = setup();
   let completed = false;
   void result.then(
@@ -384,7 +384,7 @@ test('синтетическая отмена до конца окна оста�
   expect(completed).toBe(false);
 });
 
-test('синтетическое второе сообщение с именем null заменяет судно целиком', async () => {
+test('Second synthetic report with a null name replaces the entire vessel', async () => {
   const { transport, clock, result } = setup();
   transport.emitOpen();
   transport.emitMessage(
@@ -404,7 +404,7 @@ test('синтетическое второе сообщение с именем
   expectResourcesClosed(transport, clock);
 });
 
-test('синтетический collectedAt равен времени управляемых часов завершения', async () => {
+test('Synthetic collectedAt matches the controlled clock at completion', async () => {
   const { transport, clock, result } = setup('2026-01-01T00:00:00.000Z');
   transport.emitOpen();
   clock.advanceBy(WINDOW_MS);

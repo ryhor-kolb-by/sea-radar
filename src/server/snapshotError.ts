@@ -1,11 +1,11 @@
 /**
- * Коды ошибок снимка и их тексты. Тексты — часть контракта с интерфейсом:
- * интерфейс показывает `message` как есть, поэтому формулировки заданы здесь
- * литералами и нигде больше не повторяются.
+ * Snapshot error codes and their text. The text is part of the contract with
+ * the interface: the interface shows `message` as-is, so the wording is set
+ * here as literals and isn't repeated anywhere else.
  *
- * Сырой текст ошибки провайдера или исключения в `message` не попадает: наружу
- * идёт только одна из этих пяти строк. Иначе в ответ могла бы просочиться
- * внутренняя подробность, вплоть до подставленного в URL ключа.
+ * The raw text of a provider error or an exception never ends up in
+ * `message`: only one of these five strings goes out. Otherwise an internal
+ * detail could leak into the response, up to a key embedded in a URL.
  */
 
 export type SnapshotErrorCode =
@@ -16,11 +16,11 @@ export type SnapshotErrorCode =
   | "internal";
 
 const MESSAGES: Record<SnapshotErrorCode, string> = {
-  no_api_key: "Ключ AISStream не настроен",
-  connect_failed: "Не удалось подключиться к источнику",
-  provider_error: "Источник вернул ошибку",
-  disconnected: "Соединение с источником разорвано",
-  internal: "Внутренняя ошибка сервера",
+  no_api_key: "AISStream key is not configured",
+  connect_failed: "Unable to connect to the data source",
+  provider_error: "The data source returned an error",
+  disconnected: "Connection to the data source was lost",
+  internal: "Internal server error",
 };
 
 export function messageFor(code: SnapshotErrorCode): string {

@@ -1,12 +1,14 @@
 /**
- * Сбор снимка позиций из AISStream.
+ * Collects a position snapshot from AISStream.
  *
- * Модуль сетевого кода не содержит и часов не вызывает: соединение и время
- * приходят параметрами. Из-за этого сборщик можно проверить заготовленными
- * сообщениями и управляемым временем, не открывая сокет и не имея ключа.
+ * The module contains no network code and calls no clock: the connection and
+ * time arrive as parameters. Because of that, the collector can be tested
+ * with prepared messages and controlled time, without opening a socket or
+ * having a key.
  *
- * Разбор полей сюда не входит — сообщение превращает в судно `toVessel`.
- * Здесь только накопление набора и правила завершения.
+ * Field parsing is out of scope here — `toVessel` turns a message into a
+ * vessel. This module only accumulates the set and applies the completion
+ * rules.
  */
 
 import {
@@ -20,20 +22,21 @@ import { toVessel } from "@/server/toVessel";
 import type { Vessel } from "@/vessel";
 
 /**
- * Соединение с источником — ровно то, чем пользуется сборщик. Боевая
- * реализация оборачивает WebSocket, тестовая просто вызывает обработчики.
+ * The connection to the source — exactly what the collector uses. The
+ * production implementation wraps a WebSocket; the test one just calls the
+ * handlers.
  */
 export type Transport = {
   readonly send: (payload: string) => void;
   readonly close: () => void;
   readonly onOpen: (handler: () => void) => void;
-  /** Сообщение приходит строкой: декодирование кадра — забота реализации. */
+  /** The message arrives as a string: decoding the frame is the implementation's job. */
   readonly onMessage: (handler: (data: string) => void) => void;
   readonly onError: (handler: () => void) => void;
   readonly onClose: (handler: () => void) => void;
 };
 
-/** Часы: отметка времени и таймер срока. */
+/** The clock: a time reading and a deadline timer. */
 export type Clock = {
   readonly now: () => Date;
   readonly setTimer: (ms: number, callback: () => void) => unknown;
@@ -41,20 +44,20 @@ export type Clock = {
 };
 
 /**
- * Почему сбор закончился. Оба значения — успех: окно истекло при живом
- * соединении либо набрался предел. Неуспешные исходы сюда не попадают, у них
- * код ошибки.
+ * Why collection ended. Both values are a success: the window elapsed with a
+ * live connection, or the limit was reached. Unsuccessful outcomes don't end
+ * up here — they have an error code.
  */
 export type CollectReason = "window_elapsed" | "limit_reached";
 
-/** Исход сбора: набор судов либо код ошибки. */
+/** The collection outcome: a set of vessels, or an error code. */
 export type CollectResult =
   | {
       readonly ok: true;
       readonly vessels: readonly Vessel[];
       readonly collectedAt: Date;
       readonly reason: CollectReason;
-      /** Набор оборван пределом: в районе есть суда, которых здесь нет. */
+      /** The set was cut off by the limit: there are vessels in the area not included here. */
       readonly truncated: boolean;
     }
   | { readonly ok: false; readonly code: SnapshotErrorCode; readonly attemptedAt: Date };
@@ -63,11 +66,11 @@ export type CollectOptions = {
   readonly apiKey: string;
   readonly transport: Transport;
   readonly clock: Clock;
-  /** Отмена запроса клиентом: завершает сбор тем же путём, что и прочие исходы. */
+  /** Client-side cancellation: ends collection via the same path as other outcomes. */
   readonly signal?: AbortSignal;
 };
 
-/** Подписка на район. Ключ входит сюда и больше никуда не копируется. */
+/** The area subscription. The key enters here and is copied nowhere else. */
 function subscriptionPayload(apiKey: string): string {
   return JSON.stringify({
     APIKey: apiKey,
@@ -77,38 +80,41 @@ function subscriptionPayload(apiKey: string): string {
 }
 
 /**
- * Снимок позиций за срок сбора либо ошибка.
+ * A snapshot of positions over the collection window, or an error.
  *
- * Срок отсчитывается от входа в функцию, а не от открытия соединения: по
- * заданию в 15 секунд входят и соединение, и отправка подписки.
+ * The window is counted from entering the function, not from the connection
+ * opening: per the task, the 15 seconds include both connecting and sending
+ * the subscription.
  *
- * Набор живёт внутри одного вызова и наружу не переживает: между запросами
- * ничего не хранится и не накапливается.
+ * The set lives inside a single call and doesn't outlive it: nothing is
+ * stored or accumulated between requests.
  */
 export function collectSnapshot(options: CollectOptions): Promise<CollectResult> {
   const { apiKey, transport, clock, signal } = options;
 
   return new Promise<CollectResult>((resolve) => {
-    // Состояние соединения. `subscribed` отделяет «не смогли подключиться» от
-    // «подключились и потеряли связь»: это разные коды ошибки в задании.
+    // Connection state. `subscribed` separates "couldn't connect" from
+    // "connected and then lost the connection": these are different error
+    // codes in the task.
     let subscribed = false;
 
-    // Результат отдаётся ровно один раз. Поздние события — сообщение после
-    // предела, закрытие после конца окна — уже ничего не меняют.
+    // The result is delivered exactly once. Late events — a message after the
+    // limit, a close after the window ends — no longer change anything.
     let settled = false;
     let timer: unknown = null;
 
     /**
-     * Набор: одна позиция на судно. Ключ — `id` из MMSI, поэтому сто сообщений
-     * об одном судне дают одну запись, а предел считает суда, а не сообщения.
+     * The set: one position per vessel. The key is the `id` from MMSI, so a
+     * hundred messages about one vessel produce one entry, and the limit
+     * counts vessels, not messages.
      *
-     * Рядом с судном лежит его время в миллисекундах — то же, что в
-     * `timestamp`, но числом. Хранится, а не разбирается заново при каждом
-     * сравнении: сравнение идёт на каждое входящее сообщение.
+     * Next to the vessel sits its time in milliseconds — the same value as
+     * `timestamp`, but as a number. It's stored rather than reparsed on every
+     * comparison, since the comparison runs on every incoming message.
      */
     const byId = new Map<string, { vessel: Vessel; timeMs: number }>();
 
-    /** Снятие таймера и соединения для любого завершившегося или отменённого сбора. */
+    /** Clears the timer and the connection for any finished or cancelled collection. */
     const cleanup = () => {
       if (timer !== null) {
         clock.clearTimer(timer);
@@ -117,15 +123,15 @@ export function collectSnapshot(options: CollectOptions): Promise<CollectResult>
 
       signal?.removeEventListener("abort", onAbort);
 
-      // Закрытие соединения не должно помешать очистке уже готового результата.
+      // Closing the connection must not interfere with cleaning up an already-settled result.
       try {
         transport.close();
       } catch {
-        // Источник мог отвалиться раньше — для результата это ничего не меняет.
+        // The source may have already dropped — that changes nothing about the result.
       }
     };
 
-    /** Единственный путь, который завершает Promise готовым исходом сбора. */
+    /** The only path that settles the Promise with a finished collection outcome. */
     const finish = (result: CollectResult) => {
       if (settled) {
         return;
@@ -136,8 +142,9 @@ export function collectSnapshot(options: CollectOptions): Promise<CollectResult>
     };
 
     /**
-     * Успешное завершение. Собранный набор отдаётся только отсюда: ошибка и
-     * разрыв идут через `fail` и частичный набор не возвращают.
+     * Successful completion. The collected set is returned only from here:
+     * an error or disconnection goes through `fail` and never returns a
+     * partial set.
      */
     const succeed = (reason: CollectReason) => {
       finish({
@@ -154,7 +161,7 @@ export function collectSnapshot(options: CollectOptions): Promise<CollectResult>
     };
 
     function onAbort() {
-      // Клиентский ответ уже не нужен: освободить ресурсы, но не завершать Promise.
+      // The client no longer needs a response: free resources, but don't settle the Promise.
       if (settled) {
         return;
       }
@@ -170,35 +177,36 @@ export function collectSnapshot(options: CollectOptions): Promise<CollectResult>
       signal.addEventListener("abort", onAbort, { once: true });
     }
 
-    // Срок ставится до соединения: время на подключение входит в те же 15 с.
+    // The deadline is set before connecting: time to connect counts toward the same 15 s.
     timer = clock.setTimer(SNAPSHOT_WINDOW_SECONDS * 1000, () => {
-      // Соединение открылось и подписка ушла — это успех, даже если судов ноль:
-      // их могло не быть в районе, и это не ошибка.
+      // The connection opened and the subscription was sent — that's a
+      // success even with zero vessels: there may have been none in the
+      // area, and that's not an error.
       if (subscribed) {
         succeed("window_elapsed");
         return;
       }
 
-      // Срок кончился, а подключиться так и не вышло.
+      // The window ended and connecting never succeeded.
       fail("connect_failed");
     });
 
     transport.onOpen(() => {
-      // Подписка уходит сразу после открытия: AISStream даёт на неё несколько
-      // секунд и закрывает соединение, если её нет.
+      // The subscription is sent immediately after opening: AISStream gives
+      // it a few seconds and closes the connection if it doesn't arrive.
       try {
         transport.send(subscriptionPayload(apiKey));
         subscribed = true;
       } catch {
-        // Отправить подписку не удалось — значит, соединения фактически нет.
+        // Sending the subscription failed — so there effectively is no connection.
         fail("connect_failed");
       }
     });
 
     transport.onMessage((data) => {
-      // Сообщение после завершения набор не меняет. Проверка стоит и здесь, а
-      // не только в `finish`: иначе поздний кадр успел бы записаться в `byId`
-      // между завершением и закрытием сокета.
+      // A message after completion doesn't change the set. The check is here
+      // too, not only in `finish`: otherwise a late frame could still get
+      // written into `byId` between settling and the socket closing.
       if (settled) {
         return;
       }
@@ -207,58 +215,66 @@ export function collectSnapshot(options: CollectOptions): Promise<CollectResult>
       try {
         parsed = JSON.parse(data);
       } catch {
-        // Источник прислал не JSON — это ошибка на его стороне.
+        // The source sent something that isn't JSON — that's an error on its end.
         fail("provider_error");
         return;
       }
 
-      // Служебные кадры (подтверждение подписки) и сообщения без валидной
-      // позиции судна не создают: `toVessel` возвращает `null`, и мы просто
-      // ждём дальше. Это не ошибка — источник вправе прислать что угодно.
+      // Service frames (subscription acknowledgment) and messages without a
+      // valid vessel position don't create one: `toVessel` returns `null`,
+      // and we simply keep waiting. That's not an error — the source is
+      // allowed to send whatever it wants.
       const vessel = toVessel(parsed);
       if (vessel === null) {
         return;
       }
 
-      // Время сообщения, а не порядок прихода: сообщения могут прийти не в том
-      // порядке, в каком составлены. Точность — миллисекунда: `timestamp`
-      // собран `toVessel` с обрезкой наносекунд, и разбор здесь точный.
+      // The message's own time, not arrival order: messages can arrive out
+      // of the order in which they were composed. Precision is a
+      // millisecond: `timestamp` was assembled by `toVessel` with
+      // nanoseconds truncated, and parsing here is exact.
       const timeMs = Date.parse(vessel.timestamp);
 
       const known = byId.get(vessel.id);
       if (known !== undefined && timeMs <= known.timeMs) {
-        // Метка не новее известной — остаётся принятая первой. Строгое «>»
-        // ниже и есть это правило: при равных метках замены не происходит.
+        // The mark isn't newer than the known one — the first-accepted one
+        // stays. The strict ">" below is exactly this rule: at equal marks,
+        // no replacement happens.
         return;
       }
 
-      // Новое сообщение заменяет судно целиком, а не дописывает поля: иначе
-      // у судна остались бы скорость и курс из прошлой позиции.
+      // A new message replaces the vessel entirely rather than patching
+      // fields: otherwise the vessel would keep the speed and course from
+      // its previous position.
       byId.set(vessel.id, { vessel, timeMs });
 
-      // Предел считается после записи и по числу судов: сто сообщений об одном
-      // судне размер не увеличат, и сбор пойдёт до конца окна.
+      // The limit is checked after writing and by vessel count: a hundred
+      // messages about one vessel won't grow the size, and collection will
+      // run to the end of the window.
       if (byId.size >= SNAPSHOT_VESSEL_LIMIT) {
         succeed("limit_reached");
       }
     });
 
     transport.onError(() => {
-      // До открытия — «не удалось подключиться», и ответ уходит немедленно, не
-      // дожидаясь конца срока. После — ошибка уже на стороне источника.
+      // Before opening — "couldn't connect," and the response goes out
+      // immediately, without waiting for the window to end. After — the
+      // error is already on the source's side.
       fail(subscribed ? "provider_error" : "connect_failed");
     });
 
     transport.onClose(() => {
-      // Закрытие после подписки — потерянная связь; до подписки — неудавшееся
-      // подключение. Собранное к этому моменту не отдаётся: набор за оборванное
-      // окно неполон, и выдать его успехом значило бы соврать о районе.
+      // A close after subscribing means a lost connection; before
+      // subscribing it means a failed connection attempt. What's been
+      // collected by this point is not returned: a set from a cut-off
+      // window is incomplete, and returning it as a success would
+      // misrepresent the area.
       fail(subscribed ? "disconnected" : "connect_failed");
     });
   });
 }
 
-/** Боевые часы. */
+/** The production clock. */
 export const systemClock: Clock = {
   now: () => new Date(),
   setTimer: (ms, callback) => setTimeout(callback, ms),
@@ -266,8 +282,8 @@ export const systemClock: Clock = {
 };
 
 /**
- * Боевое соединение поверх WebSocket. В Node 22 `WebSocket` есть глобально,
- * поэтому отдельной библиотеки не нужно.
+ * The production connection, built on WebSocket. In Node 22, `WebSocket` is
+ * available globally, so no separate library is needed.
  */
 export function createWebSocketTransport(): Transport {
   const socket = new WebSocket(AISSTREAM_URL);
@@ -280,8 +296,9 @@ export function createWebSocketTransport(): Transport {
       socket.addEventListener("message", (event: MessageEvent) => {
         const { data } = event;
 
-        // Источник шлёт бинарные кадры с UTF-8 JSON внутри, но может прислать и
-        // строку. Blob разбирается асинхронно, поэтому обрабатывается отдельно.
+        // The source sends binary frames with UTF-8 JSON inside, but may
+        // also send a string. A Blob is parsed asynchronously, so it's
+        // handled separately.
         if (typeof data === "string") {
           handler(data);
           return;

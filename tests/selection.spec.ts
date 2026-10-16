@@ -1,37 +1,38 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Тесты выбора судна. Проверяют только выбор и карточку: движение здесь не
- * проверяется — оно проверено визуально, автоматическая проверка с управляемым
- * временем относится к релизу R3.
+ * Vessel selection tests. They check only selection and the card: movement
+ * isn't checked here — it was verified visually, and automated checking with
+ * controlled time belongs to Release R3.
  *
- * Суда и карточка ищутся только по data-атрибутам. Текст и классы для поиска не
- * используются: название приходит от экипажа и может быть любым, а классы —
- * деталь оформления.
+ * Vessels and the card are found only by data attributes. Text and classes
+ * aren't used for lookup: the name comes from the crew and can be anything,
+ * and classes are a styling detail.
  */
 
 const VESSEL_ID = 'demo-1';
 
 test.beforeEach(async ({ page }) => {
-  // Тайлы карты не загружаются: иначе тест зависел бы от сети и от доступности
-  // tile.openstreetmap.org. Значки судов рисует Leaflet сам, без тайлов.
+  // Map tiles aren't loaded: otherwise the test would depend on the network
+  // and on tile.openstreetmap.org being available. Leaflet draws vessel
+  // icons itself, without tiles.
   await page.route('https://tile.openstreetmap.org/**', (route) => route.abort());
   await page.goto('/');
 });
 
-test('на странице три элемента с data-vessel-id', async ({ page }) => {
+test('Page contains three elements with data-vessel-id', async ({ page }) => {
   await expect(page.locator('[data-vessel-id]')).toHaveCount(3);
 });
 
-test('клик по судну открывает карточку этого судна', async ({ page }) => {
+test('Clicking a vessel opens that vessel’s card', async ({ page }) => {
   await page.locator(`[data-vessel-id="${VESSEL_ID}"]`).click();
 
   await expect(page.locator(`[data-card-vessel-id="${VESSEL_ID}"]`)).toBeVisible();
-  // Карточка на странице одна: открыта карточка выбранного судна, а не ещё одна рядом.
+  // There's exactly one card on the page: the selected vessel's card is open, not another one alongside it.
   await expect(page.locator('[data-card-vessel-id]')).toHaveCount(1);
 });
 
-test('повторный клик по тому же судну карточку не закрывает', async ({ page }) => {
+test('Clicking the same vessel again does not close the card', async ({ page }) => {
   const vessel = page.locator(`[data-vessel-id="${VESSEL_ID}"]`);
   const card = page.locator(`[data-card-vessel-id="${VESSEL_ID}"]`);
 

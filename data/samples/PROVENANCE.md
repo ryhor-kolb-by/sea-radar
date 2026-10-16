@@ -1,43 +1,43 @@
-# Происхождение образца
+# Sample Provenance
 
-Файл: `position-report.sample.json`
+File: `position-report.sample.json`
 
-## Время получения
+## Time of retrieval
 
-`2026-09-17T17:32:05.720Z` — момент, когда сервер принял сообщение (`collectedAt` из ответа `/api/snapshot`).
+`2026-09-17T17:32:05.720Z` — when the server accepted the message (`collectedAt` from the `/api/snapshot` response).
 
-Отметка самого сообщения — `MetaData.time_utc` = `2026-09-17 17:32:03.718165747 +0000 UTC`, то есть на ~2 с раньше: это время в источнике, а не время получения нами.
+The message’s own timestamp — `MetaData.time_utc` = `2026-09-17 17:32:03.718165747 +0000 UTC` — is about 2 seconds earlier: this is the source timestamp, not the time we received it.
 
-## Район подписки
+## Subscription area
 
-Пролив Дувр, `AREA_BOUNDS` из `src/config.ts`: от 50.75° N, 0.95° E до 51.25° N, 1.95° E.
+Dover Strait, `AREA_BOUNDS` from `src/config.ts`: from 50.75° N, 0.95° E to 51.25° N, 1.95° E.
 
-Подписка уходила в виде `BoundingBoxes: [[[50.75, 0.95], [51.25, 1.95]]]` с фильтром `FilterMessageTypes: ['PositionReport']`.
+The subscription was sent as `BoundingBoxes: [[[50.75, 0.95], [51.25, 1.95]]]` with the filter `FilterMessageTypes: ['PositionReport']`.
 
-Позиция из образца — 51.03991° N, 1.40933° E — внутри этого прямоугольника (проверено сравнением с границами).
+The sample position — 51.03991° N, 1.40933° E — is inside this rectangle (checked against the boundaries).
 
-## Получено из живого источника
+## Received from a live source
 
-**Да.** Сообщение пришло по WebSocket от `wss://stream.aisstream.io/v0/stream` в ответ на запрос `GET /api/snapshot`; HTTP 200, `raw` непустой. Файл записан из поля `raw` ответа программно, без ручного перенабора: добавлены только отступы, порядок ключей и значения не менялись.
+**Yes.** The message arrived over WebSocket from `wss://stream.aisstream.io/v0/stream` in response to a `GET /api/snapshot` request; HTTP 200, `raw` was non-empty. The file was written programmatically from the response’s `raw` field without manual retyping: only indentation was added; key order and values were not changed.
 
-Оговорка о ключе: тем же утром тот же запрос отвечал `disconnected` — источник закрывал соединение сразу после подписки. К моменту получения образца ключ заработал. Что именно изменилось, со стороны приложения не наблюдаемо.
+Key caveat: that same morning, the same request returned `disconnected` — the source closed the connection immediately after subscription. By the time the sample was retrieved, the key was working. The application cannot observe what exactly changed.
 
-Судно реальное (MMSI 538002013, «BERN»), данные публичные — AIS вещает их в открытый эфир.
+The vessel is real (MMSI 538002013, “BERN”); the data is public — AIS broadcasts it over the open airwaves.
 
-## Отличия от документации AISStream
+## Differences from AISStream documentation
 
-1. **Регистр координат различается между уровнями.** В `MetaData` — `latitude` / `longitude` строчными, в `Message.PositionReport` — `Latitude` / `Longitude` с большой. Страница документации в одном месте показывает `MetaData.Latitude` с большой буквы; образец подтверждает строчные, как в AsyncAPI-схеме. Для преобразователя (B-11) источник координат — `Message.PositionReport`, там регистр заглавный.
+1. **Coordinate capitalization differs between levels.** In `MetaData` they are lowercase `latitude` / `longitude`; in `Message.PositionReport` they are uppercase `Latitude` / `Longitude`. The documentation page shows `MetaData.Latitude` uppercase in one place; the sample confirms lowercase, as in the AsyncAPI schema. For the converter (B-11), the coordinate source is `Message.PositionReport`, where capitalization is uppercase.
 
-2. **Координаты на двух уровнях не совпадают по точности.** `MetaData.latitude` = 51.03991 (5 знаков), `PositionReport.Latitude` = 51.03990833333333 (полная точность). Это одна и та же позиция, округлённая по-разному. SPRINT-02 берёт координаты из `Message.PositionReport` — там значение неокруглённое.
+2. **Coordinates at the two levels do not have the same precision.** `MetaData.latitude` = 51.03991 (5 digits), `PositionReport.Latitude` = 51.03990833333333 (full precision). This is the same position rounded differently. SPRINT-02 takes coordinates from `Message.PositionReport` — the value there is unrounded.
 
-3. **`time_utc` — не ISO 8601.** Формат `2026-09-17 17:32:03.718165747 +0000 UTC` — стандартный Go-рендер `time.Time`: пробел вместо `T`, суффикс ` +0000 UTC` вместо `Z`. `new Date(...)` такую строку не разбирает. В этом образце **9 дробных знаков**, в примере из документации — 6: длина дробной части не фиксирована, поэтому разбор по жёсткому шаблону сломается на другом сообщении.
+3. **`time_utc` is not ISO 8601.** Format `2026-09-17 17:32:03.718165747 +0000 UTC` is the standard Go rendering of `time.Time`: a space instead of `T`, suffix ` +0000 UTC` instead of `Z`. `new Date(...)` does not parse this string. This sample has **9 fractional digits**; the documentation example has 6: the fractional-part length is not fixed, so parsing with a rigid template will fail on another message.
 
-4. **Есть поле `MMSI_String`, которого нет в примере документации.** Вопреки названию, приходит **числом** (`538002013`), а не строкой — совпадает с `MMSI`. В схеме оно тоже описано как integer. Для `id` берётся `MetaData.MMSI`, как записано в задании.
+4. **There is an `MMSI_String` field absent from the documentation example.** Contrary to its name, it arrives as a **number** (`538002013`), not a string — matching `MMSI`. It is also described as an integer in the schema. `MetaData.MMSI` is used for `id`, as specified in the task.
 
-5. **`ShipName` добит пробелами до 20 символов** — `"BERN                "`. Обрезка краёв, которую требует SPRINT-02, обязательна: без неё название уедет в карточку с хвостом пробелов.
+5. **`ShipName` is padded with spaces to 20 characters** — `"BERN                "`. Trimming the ends, as required by SPRINT-02, is necessary: otherwise the name in the card will have trailing spaces.
 
-6. **`Sog` пришёл целым числом** (`8`, не `8.0`) — в JSON это то же самое число, но при сверке с примерами документации, где скорость дробная, разница бросается в глаза. Тип один — number.
+6. **`Sog` arrived as an integer** (`8`, not `8.0`) — this is the same number in JSON, but the difference is noticeable when comparing with documentation examples where speed is fractional. The type is number in both cases.
 
-7. **Поле `Timestamp` внутри `PositionReport`** (здесь `58`) — это секунда AIS-метки, а не время сообщения. Временем считается `MetaData.time_utc`; путать их нельзя.
+7. **The `Timestamp` field inside `PositionReport`** (here `58`) is the AIS timestamp second, not the message time. The message time is `MetaData.time_utc`; they must not be confused.
 
-8. **Подтверждение подписки.** SPRINT-02 говорит, что источник его не присылает, документация — что присылает (`SubscriptionConfirmation`, без `MetaData`). Reader пропускает все кадры, у которых `MessageType` не равен `PositionReport`, поэтому в образец служебный кадр попасть не мог. Расхождение задания с документацией остаётся открытым вопросом.
+8. **Subscription confirmation.** SPRINT-02 says the source does not send it; the documentation says it does (`SubscriptionConfirmation`, without `MetaData`). The reader skips all frames whose `MessageType` is not `PositionReport`, so a service frame could not have appeared in the sample. The discrepancy between the task and documentation remains an open question.

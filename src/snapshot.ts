@@ -1,14 +1,15 @@
 /**
- * Снимок на стороне браузера: форма ответа `/api/snapshot`, разбор ответа и
- * тексты панели.
+ * Browser-side snapshot: the shape of the `/api/snapshot` response, parsing
+ * the response, and the panel's text.
  *
- * Тексты — часть контракта с заказчиком и с будущими тестами, поэтому собраны
- * здесь литералами и в разметке не повторяются. Числа в подписи (15 с, лимит
- * 100) берутся из ответа и из конфигурации, а не пишутся в строку руками: иначе
- * при смене константы подпись врала бы.
+ * The text is part of the contract with the customer and with future tests,
+ * so it's collected here as literals and not repeated in markup. The numbers
+ * in the label (15 s, limit 100) come from the response and from
+ * configuration, not typed into the string by hand — otherwise the label
+ * would lie after the constant changed.
  *
- * Ключ сюда не попадает и попасть не может: модуль знает только тело ответа,
- * а в нём ключа нет.
+ * The key never ends up here and cannot: this module only knows the response
+ * body, and the key isn't in it.
  */
 
 import { SNAPSHOT_VESSEL_LIMIT } from "@/config";
@@ -17,8 +18,8 @@ import type { Vessel } from "@/vessel";
 import { formatSource, formatTimestamp } from "@/vessel";
 
 /**
- * Тело ответа маршрута. Успех и ошибка различаются полем `ok` — так же, как их
- * различает сервер.
+ * The route's response body. Success and error are distinguished by the `ok`
+ * field, the same way the server distinguishes them.
  */
 export type SnapshotResponse =
   | {
@@ -37,9 +38,10 @@ export type SnapshotResponse =
     };
 
 /**
- * Что показано на экране. Пустой ответ отдельным состоянием не выделен: это тот
- * же успех с нулём судов, и подпись у него та же — разное только сообщение под
- * ней. Разводить их в два состояния значило бы дублировать сборку подписи.
+ * What the screen shows. An empty response isn't a separate state: it's the
+ * same success with zero vessels, with the same label — only the message
+ * beneath it differs. Splitting them into two states would mean duplicating
+ * label assembly.
  */
 export type Screen =
   | { readonly kind: "idle-demo" }
@@ -47,43 +49,44 @@ export type Screen =
   | { readonly kind: "loaded"; readonly snapshot: Extract<SnapshotResponse, { ok: true }> }
   | { readonly kind: "error"; readonly message: string };
 
-/** Сообщение под подписью, когда за срок сбора не пришло ни одного судна. */
-const EMPTY_MESSAGE = "За время сбора позиции не получены";
+/** Message under the label when no vessel arrived during the collection window. */
+const EMPTY_MESSAGE = "No positions were received during collection";
 
-/** Начало сообщения об ошибке; дальше идёт текст из тела ответа. */
-const ERROR_PREFIX = "Не удалось получить данные: ";
+/** Start of the error message; the text from the response body follows. */
+const ERROR_PREFIX = "Unable to retrieve data: ";
 
-/** Подпись источника, когда на карте судов нет из-за ошибки. */
-const ERROR_LABEL = "Данных на карте нет";
+/** Source label when the map has no vessels because of an error. */
+const ERROR_LABEL = "No vessel data on the map";
 
-/** Подпись источника, пока идёт сбор. */
-const LOADING_LABEL = "Загрузка…";
+/** Source label while collection is in progress. */
+const LOADING_LABEL = "Loading…";
 
-/** Надпись на кнопке. */
-export const LOAD_BUTTON_TEXT = "Загрузить настоящие позиции";
+/** The button's text. */
+export const LOAD_BUTTON_TEXT = "Load live positions";
 
 /**
- * Подпись источника для загруженного снимка.
+ * Source label for a loaded snapshot.
  *
- * «Выборка неполная» стоит всегда, а не только при обрыве по лимиту: за
- * пятнадцать секунд в снимок попадают только суда, успевшие передать позицию, —
- * это не все суда района ни при каком исходе. Отдельная приписка про лимит
- * добавляется сверху, когда сбор оборвался на сотне.
+ * "Incomplete sample" is always present, not only when collection is cut off
+ * by the limit: in fifteen seconds, only vessels that managed to send a
+ * position make it into the snapshot — that's never all the vessels in the
+ * area, whatever the outcome. A separate note about the limit is appended
+ * when collection stopped at a hundred.
  */
 export function snapshotLabel(
   snapshot: Extract<SnapshotResponse, { ok: true }>,
 ): string {
   const base =
-    `${formatSource("aisstream")} · снимок за ${snapshot.windowSeconds} с` +
-    ` · получен ${formatTimestamp(snapshot.collectedAt)}` +
-    ` · судов: ${snapshot.count} · выборка неполная`;
+    `${formatSource("aisstream")} · snapshot over ${snapshot.windowSeconds} s` +
+    ` · received ${formatTimestamp(snapshot.collectedAt)}` +
+    ` · vessels: ${snapshot.count} · incomplete sample`;
 
   return snapshot.truncated
-    ? `${base} · остановлено на лимите ${SNAPSHOT_VESSEL_LIMIT}`
+    ? `${base} · stopped at limit ${SNAPSHOT_VESSEL_LIMIT}`
     : base;
 }
 
-/** Подпись источника для любого состояния экрана. */
+/** Source label for any screen state. */
 export function screenLabel(screen: Screen, demoLabel: string): string {
   switch (screen.kind) {
     case "idle-demo":
@@ -98,8 +101,8 @@ export function screenLabel(screen: Screen, demoLabel: string): string {
 }
 
 /**
- * Сообщение под подписью, если оно есть. У демонстрации и непустого снимка его
- * нет — там говорит сама подпись.
+ * The message under the label, if any. The demo and a non-empty snapshot
+ * have none — the label itself says it all.
  */
 export function screenMessage(screen: Screen): string | null {
   if (screen.kind === "error") {
@@ -114,12 +117,13 @@ export function screenMessage(screen: Screen): string | null {
 }
 
 /**
- * Ответ маршрута → состояние экрана.
+ * Route response → screen state.
  *
- * Ошибочный ответ показывает `message` из тела: формулировку выбирает сервер,
- * интерфейс её не сочиняет и не дополняет. Тело без `ok` — случай, которого в
- * нашем контракте нет; он трактуется как внутренняя ошибка, а не как пустой
- * успех, чтобы сломанный ответ не выглядел как «судов нет».
+ * An error response shows the `message` from the body: the server chooses
+ * the wording, the interface doesn't compose or embellish it. A body without
+ * `ok` is a case our contract doesn't have; it's treated as an internal
+ * error, not as an empty success, so a broken response doesn't look like "no
+ * vessels."
  */
 export function toScreen(body: unknown): Screen {
   if (typeof body !== "object" || body === null || !("ok" in body)) {
@@ -133,7 +137,7 @@ export function toScreen(body: unknown): Screen {
     : { kind: "error", message: response.error.message };
 }
 
-/** Суда, которые показывает карта. Во всех состояниях, кроме снимка, их нет. */
+/** Vessels shown by the map. In every state except a loaded snapshot, there are none. */
 export function screenVessels(screen: Screen): readonly Vessel[] {
   return screen.kind === "loaded" ? screen.snapshot.vessels : [];
 }

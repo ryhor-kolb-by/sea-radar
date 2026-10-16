@@ -1,12 +1,13 @@
 /**
- * `GET /api/snapshot` — снимок настоящих позиций.
+ * `GET /api/snapshot` — a snapshot of real positions.
  *
- * Отдаёт набор судов, собранный за срок сбора. Пустой набор — это успех с
- * `vessels: []`, а не ошибка: судов в районе могло не быть, и интерфейс
- * говорит об этом отдельными словами.
+ * Returns the set of vessels collected over the collection window. An empty
+ * set is a success with `vessels: []`, not an error: there may simply have
+ * been no vessels in the area, and the interface says so in separate words.
  *
- * Обработчик серверный: ключ читается здесь и в браузер не попадает. Соединение
- * с AISStream открывает сервер приложения, а не страница.
+ * The handler is server-side: the key is read here and never reaches the
+ * browser. The connection to AISStream is opened by the application server,
+ * not the page.
  */
 
 import { SNAPSHOT_WINDOW_SECONDS } from "@/config";
@@ -19,12 +20,12 @@ import {
 import type { SnapshotErrorCode } from "@/server/snapshotError";
 import { messageFor } from "@/server/snapshotError";
 
-// Node runtime: нужен WebSocket и серверное окружение. В Next.js 16 это уже
-// значение по умолчанию, а Edge объявлен устаревшим, — строка стоит явно,
-// потому что задание называет её частью контракта.
+// Node runtime: WebSocket and a server environment are needed. In Next.js 16
+// this is already the default, and Edge is deprecated — the line is kept
+// explicit because the task calls it part of the contract.
 export const runtime = "nodejs";
 
-// Снимок зависит от момента запроса: ответ не кэшируется и не пререндерится.
+// The snapshot depends on the moment of the request: the response is not cached or prerendered.
 export const dynamic = "force-dynamic";
 
 function errorResponse(code: SnapshotErrorCode, attemptedAt: Date): Response {
@@ -39,7 +40,7 @@ function errorResponse(code: SnapshotErrorCode, attemptedAt: Date): Response {
 }
 
 export async function GET(request: Request): Promise<Response> {
-  // Ключа нет — отвечаем сразу, соединение не открывается вовсе.
+  // No key — respond right away, no connection is opened at all.
   const apiKey = readApiKey();
   if (!apiKey.ok) {
     return errorResponse("no_api_key", systemClock.now());
@@ -61,16 +62,17 @@ export async function GET(request: Request): Promise<Response> {
       ok: true,
       vessels: result.vessels,
       collectedAt: result.collectedAt.toISOString(),
-      // Константа окна, а не фактическая длительность: при завершении по
-      // пределу сбор занял меньше, но в подписи на экране стоит те же 15 с.
+      // The window constant, not the actual duration: when collection ends
+      // at the limit it took less time, but the on-screen label still
+      // states the same 15 s.
       windowSeconds: SNAPSHOT_WINDOW_SECONDS,
       count: result.vessels.length,
       truncated: result.truncated,
       reason: result.reason,
     });
   } catch {
-    // Текст исключения наружу не отдаётся: в нём может оказаться что угодно,
-    // вплоть до подставленного в адрес ключа. Наружу — фиксированная фраза.
+    // The exception's text is never exposed: it could contain anything, up
+    // to the key embedded in a URL. What goes out is a fixed phrase.
     return errorResponse("internal", systemClock.now());
   }
 }
