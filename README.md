@@ -1,26 +1,26 @@
 # Sea Radar
 
-Учебное веб-приложение: карта пролива Дувр и суда на ней. Работает локально на одном компьютере.
+Educational web application: a map of the Strait of Dover and vessels on it. Runs locally on a single computer.
 
-Задание заказчика — `docs/tasks/PROJECT_BRIEF.md`.
+Customer brief: `docs/tasks/PROJECT_BRIEF.md`.
 
-## Требования
+## Requirements
 
 Node.js 24, npm.
 
-## Запуск
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Приложение открывается на http://localhost:3000
+The application is available at http://localhost:3000
 
-## Команды
+## Commands
 
 ```bash
-npm run dev      # разработка
-npm run build    # production-сборка
-npm start        # запуск собранного приложения
+npm run dev      # development
+npm run build    # production build
+npm start        # run the built application
 ```

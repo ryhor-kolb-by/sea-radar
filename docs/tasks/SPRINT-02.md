@@ -1,117 +1,117 @@
-# SPRINT-02 — Релиз R2: снимок настоящих позиций
+# SPRINT-02 — Release R2: Snapshot of Real Positions
 
-Вторая неделя, занятия 3 и 4. Закрывает US-05…US-08 из `PROJECT_BRIEF.md`. Задачи первой недели остаются в силе.
-
----
-
-## Письмо заказчика № 1
-
-> Посмотрели первую версию — карта и учебные суда нас устраивают. Оформили ключ доступа к AISStream, передаём отдельно, не по почте.
->
-> Напоминаем, что важно для нас на этом этапе. Кнопка одна. Пока идёт сбор — второй раз нажать нельзя. Снимок короткий: несколько секунд, не больше сотни судов — нам не нужен весь пролив, нам нужен пример. Рядом с картой всегда написано, что мы видим: учебные суда или настоящие, когда получены, сколько, и что это не все суда района. Если за время сбора ничего не пришло — так и написать, а не «судов нет». Если ошибка — понятная фраза о причине. Без ключа учебная часть работает как раньше.
->
-> Пока нам достаточно, чтобы после нажатия кнопки на карте появлялся результат этой попытки. Если попытка не удалась — пусть карта будет пустой с объяснением; учебные суда вернутся после обновления страницы, это нормально.
->
-> Ключ не должен оказаться в файлах, которые вы нам передаёте, и на экране.
+Week two, sessions 3 and 4. Covers US-05…US-08 from `PROJECT_BRIEF.md`. Week-one tasks remain in effect.
 
 ---
 
-## Часть A. Что делаем
+## Customer Letter No. 1
 
-### Согласованные значения
-
-- **Источник:** AISStream, WebSocket, только с сервера приложения (Route Handler, `runtime = 'nodejs'`). Подписка отправляется сразу после открытия соединения: `{ APIKey, BoundingBoxes: [[[lat_sw, lon_sw], [lat_ne, lon_ne]]], FilterMessageTypes: ['PositionReport'] }`. Подтверждения подписки источник не присылает.
-- **Ключ:** переменная `AISSTREAM_API_KEY`, читается только на сервере; `.env.example` со строкой `AISSTREAM_API_KEY=` закоммичен; `.env.local` с настоящим значением в `.gitignore`. Значение не выводится в терминал, логи, ответы и клиентский код и не вводится в чат с агентом.
-- **Формат сообщения:** по документации `PositionReport` содержит `MetaData` (`MMSI`, `ShipName`, `latitude`, `longitude`, `time_utc` строкой вида `2024-01-01 12:00:00.123456789 +0000 UTC`) и `Message.PositionReport` (`Sog`, `Cog`, `TrueHeading`, координаты). Источники полей: `id` ← `MetaData.MMSI`; `name` ← `MetaData.ShipName` (пробелы по краям обрезаются, пустое → `null`); `timestamp` ← `MetaData.time_utc` в ISO с миллисекундами; `lat`, `lon` ← `Message.PositionReport.Latitude/Longitude`; `speedKnots` ← `Sog`; `courseDeg` ← `Cog`. Регистр и точный набор полей подтверждаются сохранённым образцом; преобразователь пишется по образцу.
-- **Образец:** `data/samples/position-report.sample.json` в исходной структуре плюс `data/samples/PROVENANCE.md` (время получения UTC, район, факт живого получения, отличия от документации). Если условия AISStream не разрешают хранить настоящее сообщение — пример из документации или синтетический пример по схеме с пометкой «не получен из живого источника».
-- **Валидация позиции:** `lat` в [-90, 90], `lon` в [-180, 180]; 91/181 («недоступно»), значения вне диапазона и нечисловые — позиция отбрасывается; время должно парситься; MMSI непустой. Скорость 102.3, вне [0, 102.2], отсутствующая или нечисловая → `null`; курс 360, вне [0, 360), отсутствующий или нечисловой → `null`; позиция при этом принимается. Невалидная позиция не создаёт судно с координатами 0,0.
-- **Сбор:** срок 15 секунд от начала серверной обработки, включая соединение и отправку подписки; до 100 уникальных судов с валидной позицией, при достижении — немедленное завершение; одна позиция на `id` — самая новая по `time_utc` (сравнение с точностью до миллисекунды), новое сообщение заменяет объект судна целиком, при равных метках остаётся принятая первой; ошибка провайдера, разрыв или отмена не возвращают частичный набор; результат завершается один раз, поздние события его не меняют; во всех исходах закрываются соединение и таймеры; `collectedAt` и `attemptedAt` — по переданным часам. Источник событий и часы — параметры сборщика, чтобы тесты подавали сообщения и двигали время без сети. Константы 15 и 100 — в конфигурации.
-- **Endpoint `GET /api/snapshot`.** Успех — HTTP 200: `{ ok: true, vessels, collectedAt, windowSeconds, count, truncated, reason: 'window_elapsed' | 'limit_reached' }`; пустой успех — то же с `vessels: []`, `count: 0`. Ошибка — HTTP 502: `{ ok: false, attemptedAt, error: { code, message } }`. Коды и фиксированные `message`: `no_api_key` — «Ключ AISStream не настроен»; `connect_failed` — «Не удалось подключиться к источнику» (ошибка сокета до открытия — немедленно; конец срока без открытия или без отправленной подписки); `provider_error` — «Источник вернул ошибку»; `disconnected` — «Соединение с источником разорвано» (закрытие после подписки до штатного завершения); `internal` — «Внутренняя ошибка сервера». Сырой текст ошибки в `message` не попадает. Время попытки интерфейс берёт только из ответа. Промежуточная форма ответа до сборщика (B-09): HTTP 200 `{ ok: true, raw: <сообщение или null>, collectedAt }`.
-- **Состояния интерфейса — результат последней попытки:**
-  - *idle-demo* — демонстрация, подпись «Демонстрационные данные»;
-  - *loading* — демотаймер остановлен, суда, выбор и карточка убраны, подпись «Загрузка…», кнопка заблокирована, базовая карта остаётся;
-  - *success* — набор на карте, подпись «AISStream · снимок за 15 с · получен HH:MM:SS UTC · судов: N · выборка неполная» (при `truncated` в конец добавляется « · остановлено на лимите 100»; «15» — константа окна, не фактическая длительность); при первом непустом успехе карта возвращается к начальному виду, дальше вид не трогается;
-  - *empty* — та же подпись с «судов: 0» и сообщение «За время сбора позиции не получены»;
-  - *error* — подпись «Данных на карте нет» и сообщение «Не удалось получить данные: <message>».
-- **Тексты:** кнопка «Загрузить настоящие позиции»; времена — `HH:MM:SS UTC`. Тексты — часть контракта для будущих тестов.
-- Настоящие суда между загрузками не двигаются. Значки и карточка — те же, что для демонстрации.
-
-### Задачи
-
-**B-08. Конфигурация ключа.** `.env.example`, `.gitignore`, серверный модуль чтения переменной. Критерий: `.env.local` не в `git ls-files`; модуль возвращает «ключ отсутствует» без исключения; после B-09 без ключа endpoint отвечает `no_api_key`.
-
-**B-09. Reader (серверный модуль, который открывает соединение с AISStream и читает сообщения) и endpoint.** `GET /api/snapshot`: открытие WebSocket, подписка сразу после открытия, первое полученное сообщение как есть в промежуточной форме (`raw: null` — за срок при живом соединении сообщений не было); срок 15 с; ошибки по формату; ресурсы закрываются при завершении, ошибке и отмене. Критерий: живой запрос возвращает сообщение, `raw: null` или ошибку по формату; ключ не в логах и ответе.
-
-**B-10. Образец и провенанс.** Файлы в `data/samples/`. Критерий: в провенансе указан факт живого получения или его отсутствие.
-
-**B-11. Преобразователь.** `PositionReport` → судно по правилам валидации, по образцу. Критерий: три поля сверены с образцом вручную; невалидная позиция не создаёт судно.
-
-**B-12. Сборщик.** Правила сбора и ответ endpoint. Критерий: живой запрос возвращает набор с метаданными; повторный запрос не наслаивается на предыдущий.
-
-**B-13. Интерфейс R2.** Кнопка, состояния и тексты выше; значки и карточка переиспользуются. Критерий: один MMSI из ответа сопоставлен со значком и карточкой; без ключа — «Не удалось получить данные: Ключ AISStream не настроен»; тесты B-07 зелёные.
-
-### Результат недели
-
-**После занятия 3:** B-08…B-10 — сервер получает одно настоящее сообщение, образец с провенансом сохранён, ключ настроен безопасно, демонстрация работает; checkpoint 03.
-
-**После занятия 4:** B-11…B-13 — кнопка загружает снимок по правилам, настоящие суда и карточки на карте, подписи и сообщения; checkpoint 04.
-
-Автоматические проверки правил сбора — задача релиза R3; на этой неделе правила реализованы и проверены вручную — так и записывается в checkpoint.
-
-### Примеры ожидаемого поведения
-
-- Два одинаковых сообщения о судне A → на карте одно судно A.
-- A с `time_utc` 12:01 и позицией P2, затем A с 12:00 и P1 → на карте A в P2.
-- Скорость 0 → «0 уз»; скорость 102.3 → «Нет данных».
-- 100 сообщений об одном судне → одно судно; сбор идёт до конца окна.
-- Обрыв соединения после трёх позиций → ошибка, на карте судов нет.
-- Нажатие во время демонстрации → демонстрация остановлена, до результата на карте судов нет.
+> We looked at the first version — the map and training vessels work for us. We have obtained an AISStream access key and will provide it separately, not by email.
+>
+> A reminder of what matters to us at this stage. There is one button. While collection is in progress, it cannot be pressed a second time. The snapshot is short: a few seconds, no more than a hundred vessels — we do not need the whole strait, just an example. Next to the map, it always says what we are seeing: training vessels or real ones, when they were received, how many, and that these are not all vessels in the area. If nothing arrives during collection, say that, not “there are no vessels”. If there is an error, provide an understandable phrase explaining the reason. Without a key, the training part works as before.
+>
+> For now, it is enough that after pressing the button, the map shows the result of that attempt. If the attempt fails, the map can be empty with an explanation; the training vessels will return after a page refresh, which is fine.
+>
+> The key must not end up in files you give us or on screen.
 
 ---
 
-## Часть B. Как делаем с Claude Code
+## Part A. What We Are Doing
 
-Здесь «мы» — тот, кто ведёт агента: на занятии это ментор, при повторении в своей копии — вы.
+### Agreed Values
 
-### Метод недели
+- **Source:** AISStream, WebSocket, only from the application server (Route Handler, `runtime = 'nodejs'`). The subscription is sent immediately after the connection opens: `{ APIKey, BoundingBoxes: [[[lat_sw, lon_sw], [lat_ne, lon_ne]]], FilterMessageTypes: ['PositionReport'] }`. The source does not send subscription confirmations.
+- **Key:** `AISSTREAM_API_KEY` variable, read only on the server; `.env.example` with the line `AISSTREAM_API_KEY=` is committed; `.env` with the actual value is in `.gitignore`. The value is not printed to the terminal, logs, responses, or client code and is not entered in a chat with the agent.
+- **Message format:** according to the documentation, `PositionReport` contains `MetaData` (`MMSI`, `ShipName`, `latitude`, `longitude`, `time_utc` as a string of the form `2024-01-01 12:00:00.123456789 +0000 UTC`) and `Message.PositionReport` (`Sog`, `Cog`, `TrueHeading`, coordinates). Field sources: `id` ← `MetaData.MMSI`; `name` ← `MetaData.ShipName` (trim surrounding whitespace, empty → `null`); `timestamp` ← `MetaData.time_utc` in ISO format with milliseconds; `lat`, `lon` ← `Message.PositionReport.Latitude/Longitude`; `speedKnots` ← `Sog`; `courseDeg` ← `Cog`. The case and exact set of fields are confirmed against a saved sample; the converter is written against the sample.
+- **Sample:** `data/samples/position-report.sample.json` in its original structure, plus `data/samples/PROVENANCE.md` (UTC time obtained, area, whether it was received live, differences from the documentation). If AISStream's terms do not allow saving a real message, use a documentation example or a synthetic example following the schema, marked “not received from a live source”.
+- **Position validation:** `lat` in [-90, 90], `lon` in [-180, 180]; 91/181 (“unavailable”), out-of-range values, and non-numeric values — position is discarded; time must parse; MMSI must be non-empty. Speed 102.3, outside [0, 102.2], missing, or non-numeric → `null`; course 360, outside [0, 360), missing, or non-numeric → `null`; the position is still accepted. An invalid position must not create a vessel at coordinates 0,0.
+- **Collection:** 15 seconds from the start of server processing, including connection and sending the subscription; up to 100 unique vessels with valid positions, ending immediately when reached; one position per `id` — the newest by `time_utc` (comparison to millisecond precision), a new message replaces the entire vessel object, and for equal timestamps the one accepted first remains; provider error, disconnection, or cancellation does not return a partial set; result settles exactly once, later events do not change it; the connection and timers are closed in all outcomes; `collectedAt` and `attemptedAt` come from the supplied clock. Event source and clock are collector parameters, so tests can supply messages and advance time without a network. Constants 15 and 100 are in configuration.
+- **Endpoint `GET /api/snapshot`.** Success — HTTP 200: `{ ok: true, vessels, collectedAt, windowSeconds, count, truncated, reason: 'window_elapsed' | 'limit_reached' }`; empty success — same with `vessels: []`, `count: 0`. Error — HTTP 502: `{ ok: false, attemptedAt, error: { code, message } }`. Codes and fixed `message`: `no_api_key` — “AISStream key is not configured”; `connect_failed` — “Could not connect to the source” (socket error before opening — immediately; end of window without opening or without sending the subscription); `provider_error` — “The source returned an error”; `disconnected` — “Connection to the source was lost” (connection closed after subscription before normal completion); `internal` — “Internal server error”. Raw error text is not included in `message`. The interface takes the attempt time only from the response. Intermediate response form before the collector (B-09): HTTP 200 `{ ok: true, raw: <message or null>, collectedAt }`.
+- **Interface states — result of the last attempt:**
+  - *idle-demo* — demonstration, label “Demonstration data”;
+  - *loading* — demo timer stopped, vessels, selection, and card removed, label “Loading…”, button disabled, base map remains;
+  - *success* — set displayed on the map, label “AISStream · snapshot over 15 s · received HH:MM:SS UTC · vessels: N · sample is incomplete” (when `truncated`, append “ · stopped at the limit of 100”); “15” is the window constant, not the actual duration; on the first non-empty success, the map returns to the initial view; afterward, the view is not changed;
+  - *empty* — same label with “vessels: 0” and message “No positions received during the collection window”;
+  - *error* — label “No data on the map” and message “Could not retrieve data: <message>”.
+- **Text:** button “Load real positions”; times — `HH:MM:SS UTC`. Text is part of the contract for future tests.
+- Real vessels do not move between loads. Icons and card are the same as for the demonstration.
 
-Появляется внешний сервис и секрет. Три места — браузер, сервер приложения, внешний источник — и агент должен понимать, что где выполняется. Сложность растёт: прежде чем менять код, нужно исследовать документацию и реально полученные данные; правила сбора — контракт с несколькими исходами, и каждый исход проверяется отдельно.
+### Tasks
 
-### Порядок работы
+**B-08. Key configuration.** `.env.example`, `.gitignore`, server-side module for reading the variable. Criterion: `.env` is not in `git ls-files`; module returns “key missing” without throwing; after B-09, endpoint responds with `no_api_key` when there is no key.
 
-**Исследование до правок (занятие 3).** Агент сверяет checkpoint 02 с кодом, читает это задание и документацию AISStream и предлагает reader с тестовой границей (подставные сообщения и управляемое время) — без реализации. Проверяем, что агент не придумал формат сообщения: он должен ссылаться на документацию и ждать образца.
+**B-09. Reader (server module that opens a connection to AISStream and reads messages) and endpoint.** `GET /api/snapshot`: open WebSocket, subscribe immediately after opening, first received message as-is in the intermediate form (`raw: null` — no messages arrived during the window although the connection remained live); 15-second window; errors in the specified format; resources closed on completion, error, and cancellation. Criterion: a live request returns a message, `raw: null`, or an error in the specified format; key is not in logs or response.
 
-**Секрет до кода (B-08).** Порядок обязателен: сначала `.env.example`, `.gitignore` и правила Claude Code в `.claude/settings.json`, запрещающие агенту читать файлы с секретами — deny на `Read(./.env)`, `Read(./.env.local)`, `Read(./.env.*.local)` (одним глобом с исключением `.env.example` deny не выражается; точный синтаксис — по установленной версии CLI). Потом проверка на фиктивном файле: просим агента прочитать `.env.local` и `.env.example` — отказ на первом, успех на втором. Только потом настоящий ключ — он не вводится в чат с агентом и не показывается в терминале. `CLAUDE.md` и `.gitignore` защитой не считаются.
+**B-10. Sample and provenance.** Files in `data/samples/`. Criterion: provenance states whether it was received live.
 
-**Reader (B-09).** Один запрос с полным контрактом: срок, подписка сразу после открытия, промежуточная форма ответа, коды и тексты ошибок, закрытие ресурсов при всех исходах, ключ только на сервере, запрет на сборщик и интерфейс; критерий — запрос без ключа даёт `no_api_key`. Ловушки: подписка отправлена не сразу — сервис закрывает соединение; Route Handler на Edge runtime вместо Node; `time_utc` с наносекундами не парсится напрямую.
+**B-11. Converter.** `PositionReport` → vessel according to the validation rules, using the sample. Criterion: three fields manually compared with the sample; invalid position does not create a vessel.
 
-**Образец (B-10).** Живой запрос выполняется только после того, как человек прочитал серверный код, который читает ключ; сам запрос может сделать агент. Провенанс пишется сразу. Три разных факта, которые агент должен разделять в отчёте: соединение открылось; сообщение получено; локальный код проверен.
+**B-12. Collector.** Collection rules and endpoint response. Criterion: live request returns a set with metadata; a repeated request does not accumulate on top of the previous one.
 
-**Преобразователь (B-11).** Пишется по образцу, а не по документации. Требуем сверки трёх полей вручную с файлом образца.
+**B-13. R2 interface.** Button, states, and text above; icons and card are reused. Criterion: one MMSI from the response is matched to an icon and card; without a key — “Could not retrieve data: AISStream key is not configured”; B-07 tests pass.
 
-**Сборщик (B-12).** Самый дорогой запрос недели. Перечисляем в нём все исходы: окно истекло при живом соединении, лимит, соединение не открылось, ошибка провайдера после части сообщений, отмена. Требуем завершения результата ровно один раз. Ловушки: промис резолвится дважды; таймер окна не очищается после лимита; при ошибке возвращаются «уже собранные» позиции.
+### Week Deliverables
 
-**Интерфейс (B-13).** Тексты и состояния — литералами из части A. Агент может «заботливо» сохранить предыдущий набор при ошибке — это противоречит состоянию *error* из части A (судов нет), возвращаем на доработку. Проверка руками в браузере: один MMSI из живого ответа — значок — карточка; без ключа (переименовать `.env.local`, перезапустить) — сообщение об отсутствии ключа.
+**After session 3:** B-08…B-10 — server receives one real message, sample with provenance is saved, key is configured securely, demonstration works; checkpoint 03.
 
-**Review.** Отдельно проверяем: ключ не в клиентском бандле и не в ответе; подпись называет выборку неполной; исчезновение судна из нового набора не трактуется как уход из района.
+**After session 4:** B-11…B-13 — button loads a snapshot according to the rules, real vessels and cards appear on the map, labels and messages; checkpoint 04.
 
-### Примеры запросов
+Automated checks of collection rules are a Release R3 task; this week, the rules are implemented and checked manually — state that in the checkpoint.
 
-- «Сверь docs/checkpoints/CHECKPOINT-02.md с кодом. Прочитай docs/tasks/SPRINT-02.md и документацию AISStream. Предложи минимальный серверный reader с возможностью подать тестовые сообщения и управляемое время. Карту не меняй, ничего не реализуй.»
-- «Добавь .env.example со строкой AISSTREAM_API_KEY= без значения, .env.local в .gitignore, в .claude/settings.json — deny на Read(./.env), Read(./.env.local), Read(./.env.*.local). Я создам фиктивный .env.local — попробуй прочитать его и .env.example, покажи отказ и успех.»
-- «Разверни reader в сборщик по правилам SPRINT-02: срок 15 с включая соединение и подписку, до 100 уникальных судов, последняя по time_utc позиция на id, при равном времени — первая принятая. Частичный набор после ошибки не возвращай как успех. Результат завершается один раз. Источник событий и часы — параметры. Формат ответа — из задания.»
-- «Покажи diff с фокусом на смене источника и переиспользовании отображения. Проверь, что ключ не попадает в клиентский код и ответ. Код не меняй.»
+### Examples of Expected Behavior
 
-### Что вы должны понять к концу недели
+- Two identical messages about vessel A → one vessel A on the map.
+- A with `time_utc` 12:01 and position P2, then A with 12:00 and P1 → A remains at P2 on the map.
+- Speed 0 → “0 kn”; speed 102.3 → “No data”.
+- 100 messages about one vessel → one vessel; collection continues until the end of the window.
+- Connection drops after three positions → error, no vessels on the map.
+- Pressing the button during the demonstration → demonstration stopped, no vessels on the map until the result arrives.
 
-- Почему ключ живёт на сервере и что было бы при подключении из браузера.
-- Чем правило permissions отличается от строки в `CLAUDE.md`.
-- Почему «одна позиция на id» сравнивает время сообщения, а не порядок прихода.
-- Чем пустой успех отличается от ошибки и почему интерфейс говорит о них разными словами.
-- Что такое «неполная выборка» на языке пользователя.
+---
 
-### Nice to have между занятиями
+## Part B. How We Work with Claude Code
 
-- Зарегистрировать свой ключ AISStream (бесплатно) и повторить путь «кнопка → снимок» в своей копии.
-- Сравнить сохранённый образец с примером из документации и выписать отличия.
-- Попросить свежую сессию Claude Code проверить diff checkpoint 04 на утечку секрета в клиентский код.
+Here, “we” means whoever is guiding the agent: during the session, the mentor; when repeating this in your own copy, you.
+
+### Method for the Week
+
+An external service and a secret are introduced. There are three locations — the browser, application server, and external source — and the agent must understand what runs where. Complexity increases: before changing code, research the documentation and data actually received; collection rules are a contract with several outcomes, and each outcome is checked separately.
+
+### Work Order
+
+**Research before edits (session 3).** The agent compares checkpoint 02 with the code, reads this task and the AISStream documentation, and proposes a reader with a test boundary (mock messages and controlled time) — without implementation. Check that the agent has not invented the message format: it must refer to the documentation and wait for the sample.
+
+**Secret before code (B-08).** The order is mandatory: first `.env.example`, `.gitignore`, and Claude Code rules in `.claude/settings.json` that prohibit the agent from reading files containing secrets — deny `Read(./.env)`, `Read(./.env.local)`, `Read(./.env.*.local)` (a single glob with an exception for `.env.example` cannot express a deny; exact syntax depends on the installed CLI version). Then test with a dummy file: ask the agent to read `.env.local` and `.env.example` — refusal for the first, success for the second. Only then add the real key — it is not entered in the agent chat or shown in the terminal. `CLAUDE.md` and `.gitignore` are not considered protection.
+
+**Reader (B-09).** One prompt with the full contract: window, subscription immediately after opening, intermediate response form, error codes and text, resource cleanup in all outcomes, key only on server, prohibition on collector and interface; criterion — request without key returns `no_api_key`. Pitfalls: subscription is not sent immediately — service closes the connection; Route Handler uses Edge runtime instead of Node; `time_utc` with nanoseconds does not parse directly.
+
+**Sample (B-10).** The live request is made only after a person has read the server code that reads the key; the agent can make the request itself. Write provenance immediately. Three distinct facts the agent must distinguish in the report: connection opened; message received; local code checked.
+
+**Converter (B-11).** Write it from the sample, not from the documentation. Require manual comparison of three fields against the sample file.
+
+**Collector (B-12).** The most demanding prompt of the week. List all outcomes in it: window expires with a live connection, limit reached, connection does not open, provider error after some messages, cancellation. Require the result to settle exactly once. Pitfalls: promise resolves twice; window timer is not cleared after reaching the limit; “already collected” positions are returned on error.
+
+**Interface (B-13).** Text and states are literals from Part A. The agent may “helpfully” preserve the previous set on error — that contradicts the *error* state from Part A (no vessels); send it back for revision. Manual browser check: one MMSI from a live response — icon — card; without a key (rename `.env`, restart) — missing-key message.
+
+**Review.** Check separately: key is not in the client bundle or response; label says the sample is incomplete; a vessel disappearing from the new set is not treated as having left the area.
+
+### Example Prompts
+
+- “Compare docs/checkpoints/CHECKPOINT-02.md with the code. Read docs/tasks/SPRINT-02.md and the AISStream documentation. Propose a minimal server-side reader that can accept test messages and controlled time. Do not change the map or implement anything.”
+- “Add .env.example with the line AISSTREAM_API_KEY= and no value, put .env.local in .gitignore, and add deny rules for Read(./.env), Read(./.env.local), Read(./.env.*.local) in .claude/settings.json. I will create a dummy .env.local — try to read it and .env.example, and show refusal and success.”
+- “Expand the reader into a collector according to SPRINT-02: 15-second window including connection and subscription, up to 100 unique vessels, latest position per id by time_utc, first accepted when timestamps are equal. Do not return a partial set as success after an error. The result settles once. Event source and clock are parameters. Response format is specified in the task.”
+- “Show the diff with a focus on switching the source and reusing the display. Check that the key is not included in client code or the response. Do not change code.”
+
+### What You Should Understand by the End of the Week
+
+- Why the key lives on the server and what would happen if connected from the browser.
+- How a permissions rule differs from a line in `CLAUDE.md`.
+- Why “one position per id” compares message time, not arrival order.
+- How an empty success differs from an error and why the interface describes them differently.
+- What “incomplete sample” means in user-facing language.
+
+### Nice to Have Between Sessions
+
+- Register your own AISStream key (free) and repeat the “button → snapshot” path in your own copy.
+- Compare the saved sample with the documentation example and write down the differences.
+- Ask a fresh Claude Code session to check the checkpoint 04 diff for a secret leaking into client code.

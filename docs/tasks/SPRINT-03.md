@@ -1,120 +1,120 @@
-# SPRINT-03 — Релиз R3: приёмка данных и движения
+# SPRINT-03 — Release R3: Data and Movement Acceptance
 
-Третья неделя, занятие 5. Закрывает US-09 из `PROJECT_BRIEF.md`. Задание на занятие 6 придёт отдельным файлом.
+Week three, session 5. Covers US-09 from `PROJECT_BRIEF.md`. The assignment for session 6 will arrive in a separate file.
 
 ---
 
-## Письмо заказчика № 2
+## Customer Letter No. 2
 
-> Настоящие суда на карте — это то, что нам было нужно. Перед тем как отдать программу преподавателям, хотим убедиться, что она не искажает данные. Нам недостаточно «мы проверили, работает»: покажите проверки, которые можно запустить ещё раз и получить тот же ответ.
+> Real vessels on the map are what we needed. Before handing the program to teachers, we want to make sure it does not distort the data. “We checked, it works” is not enough; show us checks that can be run again and produce the same result.
 >
-> Что именно нас волнует: о судне остаётся самое свежее по времени сообщение, даже если старое пришло позже; одно судно не показывается дважды; неизвестные скорость и курс — «Нет данных», а не ноль; судно с бессмысленными координатами не появляется в нулевой точке; сбор действительно заканчивается по времени и по количеству и не выдаёт обрывок за результат; учебные суда двигаются и останавливаются так, как заявлено.
+> What exactly concerns us: for a vessel, the newest message by timestamp is kept, even if an older one arrives later; a vessel is not shown twice; unknown speed and course are “No data”, not zero; a vessel with nonsensical coordinates does not appear at the zero point; collection really ends by time and quantity and does not return a fragment as a result; training vessels move and stop as specified.
 >
-> Если проверки покажут, что всё в порядке, — это хороший результат, ничего менять не нужно. Новых функций на этом этапе не просим.
+> If the checks show that everything is in order, that is a good result; nothing needs to be changed. We are not requesting new features at this stage.
 
 ---
 
-## Часть A. Что делаем
+## Part A. What We Are Doing
 
-### Согласованные значения
+### Agreed Values
 
-- **Раннер тестов:** Playwright Test. Проверки преобразователя и сборщика — node-проект того же раннера без браузера; проверки движения и интерфейса — браузерный проект.
-- **Независимость ожиданий:** ожидаемые значения задаются литералами до написания assertions и не вычисляются проверяемой функцией.
-- **Сборщик в тестах:** без WebSocket — через параметры «источник событий» и «часы», заложенные в R2.
-- **Время:** браузерное — `page.clock`; серверное — часы, переданные в сборщик тестом. Одно не подменяет другое. Реальных ожиданий (`waitForTimeout`) нет.
-- **Вход для преобразователя:** сохранённый образец и явно синтетические варианты на его основе (пометка «синтетический» в имени).
-- **Живое подключение:** автоматическими тестами не проверяется; статус зафиксирован вручную на прошлой неделе.
+- **Test runner:** Playwright Test. Converter and collector checks are a node project using the same runner without a browser; movement and interface checks are in the browser project.
+- **Independent expectations:** expected values are specified as literals before writing assertions and are not computed by the function under test.
+- **Collector in tests:** no WebSocket — use the “event source” and “clock” parameters provided in R2.
+- **Time:** browser — `page.clock`; server — clock passed to the collector by the test. One does not replace the other. No real waits (`waitForTimeout`).
+- **Converter input:** saved sample and explicitly synthetic variants based on it (marked “synthetic” in the name).
+- **Live connection:** not checked by automated tests; its status was recorded manually last week.
 
-### Задачи
+### Tasks
 
-**B-14. Тесты преобразователя** (node). Ожидания:
+**B-14. Converter tests** (node). Expectations:
 
-- корректное сообщение → судно с идентификатором, координатами, скоростью, курсом, временем;
-- отсутствующее название и название из пробелов → `null` (в карточке — «Нет данных»);
-- скорость 0 → `0`; скорость 102.3, -1 и отсутствующее поле → `null`;
-- курс 360 → `null`;
-- координаты 91/181 и вне диапазона (95, -200) → позиция отброшена, судна с координатами 0,0 нет;
-- координата строкой → позиция отброшена;
-- отсутствующий или пустой MMSI → позиция отброшена;
-- непарсимое время → позиция отброшена.
+- valid message → vessel with identifier, coordinates, speed, course, and time;
+- missing name and name consisting of whitespace → `null` (in the card — “No data”);
+- speed 0 → `0`; speed 102.3, -1, and missing field → `null`;
+- course 360 → `null`;
+- coordinates 91/181 and out of range (95, -200) → position discarded, no vessel at coordinates 0,0;
+- coordinate as a string → position discarded;
+- missing or empty MMSI → position discarded;
+- unparseable time → position discarded.
 
-Критерий: все случаи зелёные; ожидания литералами.
+Criterion: all cases pass; expectations are literals.
 
-**B-15. Тесты сборщика** (node, тестовый источник и управляемые часы). Ожидания:
+**B-15. Collector tests** (node, test source and controlled clock). Expectations:
 
-- два одинаковых сообщения о судне A → один объект A;
-- A с `2026-01-01T12:01:00Z` и позицией P2, затем A с `2026-01-01T12:00:00Z` и P1 → остаётся P2;
-- A с одинаковым временем и разными позициями → остаётся первая принятая;
-- 100 уникальных валидных судов → `reason: 'limit_reached'`, `truncated: true`; 101-е не принято;
-- 100 сообщений об одном судне → одно судно, сбор идёт до конца окна;
-- окно истекло при живом соединении без сообщений → успех с `count: 0`, `reason: 'window_elapsed'`;
-- соединение не открылось до конца срока → ошибка `connect_failed`; ошибка сокета до открытия → `connect_failed` немедленно;
-- ошибка провайдера после трёх валидных сообщений → `provider_error`, три сообщения не возвращаются как успех;
-- разрыв соединения после трёх валидных сообщений → `disconnected`, три сообщения не возвращаются как успех;
-- ошибка провайдера после завершения по лимиту → результат остаётся успехом, второго завершения нет;
-- отмена запроса до конца окна → результат не завершается, соединение закрыто, таймеры очищены;
-- второе сообщение о судне A с именем `null` → имя `null` (объект заменён целиком);
-- `collectedAt` равен времени переданных часов в момент завершения (литерал);
-- после любого исхода попытка не оставляет открытых соединений и отложенных действий.
+- two identical messages about vessel A → one object A;
+- A with `2026-01-01T12:01:00Z` and position P2, then A with `2026-01-01T12:00:00Z` and P1 → P2 remains;
+- A with equal timestamps and different positions → first accepted remains;
+- 100 unique valid vessels → `reason: 'limit_reached'`, `truncated: true`; 101st is not accepted;
+- 100 messages about one vessel → one vessel, collection continues until the end of the window;
+- window expires with a live connection and no messages → success with `count: 0`, `reason: 'window_elapsed'`;
+- connection does not open by the end of the window → `connect_failed` error; socket error before opening → `connect_failed` immediately;
+- provider error after three valid messages → `provider_error`, the three messages are not returned as success;
+- connection drops after three valid messages → `disconnected`, the three messages are not returned as success;
+- provider error after completion due to limit → result remains success, no second settlement;
+- request is cancelled before the end of the window → result does not settle, connection is closed, timers are cleared;
+- second message about vessel A with name `null` → name is `null` (entire object replaced);
+- `collectedAt` equals the supplied clock time at completion (literal);
+- after any outcome, the attempt leaves no open connections or pending actions.
 
-Критерий: все случаи зелёные; закрытие ресурсов проверено через тестовый источник.
+Criterion: all cases pass; resource cleanup is checked through the test source.
 
-**B-16. Тесты движения и состояний интерфейса R2** (браузер). Движение — с `page.clock`: после продвижения времени на несколько тиков позиция судна изменилась и карточка выбранного судна показывает новые координаты; после продвижения за конец маршрута позиция не меняется, карточка показывает `0 уз`, курс и время последнего шага. Состояния R2 — с подменой ответа `GET /api/snapshot`: ошибка → судов нет, подпись «Данных на карте нет», сообщение «Не удалось получить данные: <message>»; пустой ответ → подпись с «судов: 0», сообщение «За время сбора позиции не получены»; успех с судном без скорости и курса → в карточке «Нет данных», `data-icon="neutral"`. Критерий: зелёные; браузерные часы не используются для сборщика.
+**B-16. R2 movement and interface-state tests** (browser). Movement — using `page.clock`: after advancing time by several ticks, vessel position has changed and the selected vessel card shows the new coordinates; after advancing past the end of the route, position does not change, card shows `0 kn`, course, and time of the last step. R2 states — by mocking the `GET /api/snapshot` response: error → no vessels, label “No data on the map”, message “Could not retrieve data: <message>”; empty response → label with “vessels: 0”, message “No positions received during the collection window”; success with a vessel lacking speed and course → “No data” in the card, `data-icon="neutral"`. Criterion: pass; browser clock is not used for the collector.
 
-**B-17. Ревью и исправления.** Результаты B-14…B-16 разобраны. Подтверждённое расхождение с согласованными значениями R1 и R2 исправляется минимально, с повторным прогоном; отсутствие расхождений — допустимый результат. Код, тесты и результаты дополнительно просмотрены независимо — без участия и истории автора. Критерий: список расхождений (возможно пустой) и findings независимого просмотра записаны в checkpoint 05.
+**B-17. Review and fixes.** B-14…B-16 results are reviewed. Confirmed discrepancies with the agreed R1 and R2 values are fixed minimally, with a rerun; no discrepancies is an acceptable result. Code, tests, and results are also reviewed independently — without the author’s involvement or history. Criterion: list of discrepancies (possibly empty) and findings from the independent review are recorded in checkpoint 05.
 
-### Результат занятия
+### Session Deliverable
 
-B-14…B-17 закрыты; тесты B-07 продолжают проходить (если на первой неделе они не были написаны — делаются на этом занятии до новых тестов); правило интерфейса «результат последней попытки» без изменений; checkpoint 05: запись, коммит, архив. Ноль найденных дефектов — успешный исход.
+B-14…B-17 are completed; B-07 tests continue to pass (if they were not written in the first week, write them during this session before the new tests); the interface rule “result of the last attempt” remains unchanged; checkpoint 05: record, commit, archive. Finding zero defects is a successful outcome.
 
-### Чего не делаем
+### What We Are Not Doing
 
-Production-код не меняется, пока проверки не показали подтверждённое расхождение. Правило «показываем результат последней попытки» — согласованное поведение, не дефект. Не входят: новые функции; рефакторинг «заодно»; изменение правил сбора; тесты ради цифры покрытия.
+Production code does not change unless checks show a confirmed discrepancy. The rule “show the result of the last attempt” is agreed behavior, not a defect. Excluded: new features; opportunistic refactoring; changing collection rules; tests written just to increase coverage numbers.
 
 ---
 
-## Часть B. Как делаем с Claude Code
+## Part B. How We Work with Claude Code
 
-Здесь «мы» — тот, кто ведёт агента: на занятии это ментор, при повторении в своей копии — вы.
+Here, “we” means whoever is guiding the agent: during the session, the mentor; when repeating this in your own copy, you.
 
-### Метод недели
+### Method for the Week
 
-Цель — доказательства, а не код. Главная ловушка автоматической генерации тестов: агент вычисляет ожидаемое значение прогоном той же функции, которую проверяет, и тест `assert(f(x) === f(x))` всегда зелёный. Поэтому порядок жёсткий: сначала человек утверждает ожидания (они уже записаны в части A), потом агент пишет assertions под них.
+The goal is evidence, not code. The main trap in automated test generation: the agent computes the expected value by running the same function it is testing, and `assert(f(x) === f(x))` is always green. So the order is strict: first a person approves the expectations (they are already recorded in Part A), then the agent writes assertions against them.
 
-Вторая цель — независимый взгляд. Автор кода (и сессия агента с историей) не видит собственных допущений; свежая сессия без истории — видит.
+The second goal is an independent perspective. The code’s author (and an agent session with its history) does not see their own assumptions; a fresh session without history does.
 
-### Порядок работы
+### Work Order
 
-**Утверждение ожиданий.** Первый запрос — без кода: агент перечисляет проверки по части A и объясняет, что каждая доказывает. Убеждаемся, что он не предлагает «сгенерировать ожидания из текущего поведения».
+**Approve expectations.** First prompt — no code: the agent lists checks from Part A and explains what each proves. Make sure it does not suggest “generating expectations from current behavior”.
 
-**Преобразователь (B-14).** Node-проект Playwright без браузера. Синтетические варианты — от образца, с пометкой в имени файла или теста. Ожидания — литералами из части A, не вызовом преобразователя.
+**Converter (B-14).** Playwright node project without a browser. Synthetic variants are based on the sample and marked in the file or test name. Expectations are literals from Part A, not calls to the converter.
 
-**Сборщик (B-15).** Через параметры «источник» и «часы» из R2. Если агент предлагает открыть настоящий WebSocket или подменить `Date` глобально — возвращаем. Проверка закрытия ресурсов — через тестовый источник, который фиксирует вызов закрытия.
+**Collector (B-15).** Use the “source” and “clock” parameters from R2. If the agent proposes opening a real WebSocket or globally mocking `Date`, send it back. Check resource cleanup through a test source that records the close call.
 
-**Движение и состояния R2 (B-16).** `page.clock` для страницы, без `waitForTimeout`; браузерные часы не управляют серверным сборщиком — это разные процессы. Состояния R2 — подменой ответа собственного endpoint: это доказывает поведение интерфейса, не доступность AISStream. Тесты «ошибка» и «пустой ответ» — единственные, которые на следующем занятии обязаны измениться.
+**Movement and R2 states (B-16).** Use `page.clock` for the page, without `waitForTimeout`; browser clock does not control the server-side collector — these are different processes. R2 states are tested by mocking the response from our own endpoint: this proves interface behavior, not AISStream availability. The “error” and “empty response” tests are the only ones that must change in the next session.
 
-**Разбор результатов (B-17).** Расхождение есть — исправление минимальное, только для него, с повторным прогоном; никакого рефакторинга «заодно». Расхождений нет — принять результат явно, не изобретая изменения ради изменений. На занятии приложение не ломается специально: ноль дефектов — допустимый результат.
+**Review results (B-17).** If there is a discrepancy, make a minimal fix only for it and rerun; no opportunistic refactoring. If there are no discrepancies, explicitly accept the result; do not invent changes for the sake of change. Do not intentionally break the application during the session: zero defects is an acceptable result.
 
-**Независимый просмотр (B-17).** Новая сессия Claude Code из той же папки, без истории и без права на правки (`claude --permission-mode plan` или отдельные permissions с deny на Edit/Write/Bash): читает задание, diff относительно checkpoint 04 и результаты тестов; возвращает findings, ограничения проверки и рекомендацию «принять / доработать». Код и ожидания не меняет. Затем — назад в рабочую сессию, решение принимает человек.
+**Independent review (B-17).** A new Claude Code session from the same folder, without history and without edit permissions (`claude --permission-mode plan` or separate permissions with deny on Edit/Write/Bash): it reads the task, the diff against checkpoint 04, and test results; it returns findings, verification limitations, and a recommendation to “accept / revise”. It does not change code or expectations. Then return to the working session; the person makes the decision.
 
-**Checkpoint 05.** Принятые результаты, findings независимого просмотра, ограничения, статус правила интерфейса.
+**Checkpoint 05.** Accepted results, independent review findings, limitations, and status of the interface rule.
 
-### Примеры запросов
+### Example Prompts
 
-- «Сверь docs/checkpoints/CHECKPOINT-04.md с кодом. Прочитай docs/tasks/SPRINT-03.md. Перечисли проверки по заданным там ожиданиям и объясни, что каждая доказывает. Production-код не меняй.»
-- «Добавь node-проект Playwright без браузера. На основе data/samples/position-report.sample.json создай синтетические варианты и напиши тесты преобразователя по списку из задания. Ожидаемые значения — литералами, не вызовом преобразователя. Запусти.»
-- «Напиши тесты сборщика через подменённый источник и управляемые часы, без WebSocket, по списку из задания. Проверь закрытие ресурсов. Запусти.»
-- *Свежая сессия, только чтение:* «Прочитай docs/tasks/SPRINT-03.md, diff относительно коммита <sha> и результаты тестов. Верни только обоснованные findings, ограничения проверки и рекомендацию: принять или доработать. Код и ожидания не меняй.»
+- “Compare docs/checkpoints/CHECKPOINT-04.md with the code. Read docs/tasks/SPRINT-03.md. List checks for the expectations specified there and explain what each proves. Do not change production code.”
+- “Add a Playwright node project without a browser. Based on data/samples/position-report.sample.json, create synthetic variants and write converter tests from the list in the task. Expected values must be literals, not calls to the converter. Run them.”
+- “Write collector tests using a mocked source and controlled clock, without WebSocket, following the list in the task. Check resource cleanup. Run them.”
+- *Fresh session, read-only:* “Read docs/tasks/SPRINT-03.md, the diff against commit <sha>, and test results. Return only substantiated findings, verification limitations, and a recommendation: accept or revise. Do not change code or expectations.”
 
-### Что вы должны понять к концу занятия
+### What You Should Understand by the End of the Session
 
-- Почему ожидание утверждается человеком до теста.
-- Чем независимое ожидание отличается от самоподтверждающего теста.
-- Почему сборщик тестируется без сети — и что для этого было заложено на второй неделе.
-- Почему часы браузера и часы сервера — разные вещи.
-- Что свежая сессия увидела такого, чего не увидел автор.
+- Why a person approves an expectation before the test is written.
+- How an independent expectation differs from a self-confirming test.
+- Why the collector is tested without a network — and what was provided for this in the second week.
+- Why browser and server clocks are different things.
+- What the fresh session saw that the author did not.
 
-### Nice to have между занятиями
+### Nice to Have Between Sessions
 
-- Сломать одно правило сборщика в своей копии (оставить старую позицию вместо новой) и убедиться, что тест краснеет. Не краснеет — тест ничего не доказывает.
-- Придумать граничный случай, которого нет в списке, и проверить, как приложение его обрабатывает.
+- Break one collector rule in your own copy (keep the old position instead of the new one) and make sure the test fails. If it does not, the test proves nothing.
+- Come up with a boundary case that is not on the list and check how the application handles it.

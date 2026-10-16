@@ -1,105 +1,105 @@
-# SPRINT-01 — Релиз R1: карта и демонстрационные суда
+# SPRINT-01 — Release R1: Map and Demonstration Vessels
 
-Первая неделя, занятия 1 и 2. Закрывает пользовательские истории US-01…US-04 из `PROJECT_BRIEF.md`. Настоящие данные на этой неделе не подключаются. Учебные суда из brief здесь и в интерфейсе называются демонстрационными.
+Week one, sessions 1 and 2. Covers user stories US-01…US-04 from `PROJECT_BRIEF.md`. Real data is not connected this week. The training vessels from the brief are called demonstration vessels here and in the interface.
 
-Документ состоит из двух частей: **что делаем** — задачи backlog с критериями приёмки, и **как делаем с Claude Code** — метод работы на этих задачах.
-
----
-
-## Часть A. Что делаем
-
-### Согласованные значения
-
-Заказчик оставил выбор за исполнителем; выбрано следующее, каждое значение живёт в одном месте конфигурации.
-
-- **Стек:** Node.js 24, TypeScript 6.x (`strict`), Next.js (App Router) + React, Leaflet 1.9.x (библиотека карт), слой OpenStreetMap Standard (`https://tile.openstreetmap.org/{z}/{x}/{y}.png` — тайлы, картинки карты; атрибуция «© OpenStreetMap contributors»), Playwright Test как единственный раннер тестов. Leaflet подключается только на клиенте.
-- **Район:** пролив Дувр, прямоугольник от 50.75° N, 0.95° E до 51.25° N, 1.95° E. Начальный вид: центр 51.00° N, 1.45° E, zoom 10.
-- **Судно** — одна структура для демонстрационных и настоящих: `id` (строка; для демонстрации `demo-1`…`demo-3`), `name` (строка или `null`; пустая строка → `null`), `lat`, `lon`, `speedKnots` (число или `null`), `courseDeg` (число в [0, 360) или `null`; курс движения, не направление носа), `timestamp` (ISO 8601 с зоной), `source` (`'demo'` | `'aisstream'`). Ноль и `null` — разные вещи.
-- **Карточка:** идентификатор; название как текст, не HTML; координаты через `toFixed(5)` с хвостовыми нулями (`51.00000, 1.45678`); скорость с округлением до десятых без хвостовых нулей и суффиксом (`12.3 уз`, `12 уз`, `0 уз`); курс `Math.round % 360` с градусом (`135°`); время сообщения `12:00:00 UTC`; источник («Демонстрационные данные» / «AISStream»). Неизвестное значение — «Нет данных». Кнопки закрытия нет: карточка закрывается только выбором другого судна; повторный клик и клик по карте выбор не меняют. Порядок панели сверху вниз: кнопка (появится позже), подпись источника, карточка.
-- **Значок:** ориентирован по `courseDeg`; при `null` — нейтральный круглый. Атрибуты `data-vessel-id="<id>"` и `data-icon="course"|"neutral"` — тесты находят суда только по ним.
-- **Демонстрация:** три судна «Демо-судно 1»…«Демо-судно 3»; у каждого 8–12 точек маршрута внутри района и скорость движения в узлах — литералами; тик `DEMO_TICK_MS = 2000`; курс — начальный азимут отрезка по большому кругу (на старте — ко второй точке, далее — от предыдущей к текущей); время шага — реальное время браузера, на старте — момент запуска таймера; тем же тиком, которым судно приходит на последнюю точку, скорость становится `0`, дальше судно не меняется; после обновления страницы — с начала. Пауза, перемотка, зацикливание — нет. Проверка имени `<b>Демо</b>` — временной правкой конфигурации, не коммитится.
-- **Подпись источника:** «Демонстрационные данные».
-- **Запуск:** `http://localhost:3000`, только loopback.
-
-### Задачи
-
-**B-01. Каркас приложения.** Next.js + React + TypeScript strict в пустой папке, запуск, Git с `.gitignore` для Node/Next, lock-файл. Критерий: `npm run dev` открывает стартовую страницу; лишних зависимостей нет.
-
-**B-02. Карта района.** Leaflet только на клиенте, слой OSM с атрибуцией, район и начальный вид из конфигурации, карта на всю доступную область. Критерий: прямое открытие и обновление страницы работают; изменение размера окна перерисовывает карту без артефактов; `next build` проходит.
-
-**B-03. Судно и значок.** Структура судна, одно демонстрационное судно внутри района, значок по курсу, нейтральный при `null`, подпись «Демонстрационные данные». Критерий: судно видно в районе, значок ориентирован.
-
-**B-04. Выбор и карточка.** Клик по судну открывает карточку по формату выше; атрибуты значка. Критерий: карточка соответствует выбранному `id`; повторный клик её не закрывает; имя `<b>Демо</b>` отображается символами, не жирным.
-
-**B-05. Три судна с маршрутами.** `demo-1`…`demo-3`, по 8–12 точек и скорость каждого, литералами. Критерий: три судна в районе.
-
-**B-06. Движение и остановка.** Тик 2000 мс, курс — азимут отрезка, карточка выбранного судна обновляется, остановка на последней точке со скоростью `0` тем же тиком; таймеры не накапливаются при перерисовках и очищаются при уходе со страницы. Критерий: ручная проверка — движение и остановка видны; после hot reload в консоли один тик за интервал, не два.
-
-**B-07. Раннер и тесты выбора.** Playwright Test с одним браузером, запуск dev-сервера из конфигурации; браузерные тесты: на странице три элемента с `data-vessel-id`; клик по судну открывает карточку с его `id`; повторный клик её не закрывает; запросы к тайлам заблокированы. Критерий: тесты зелёные; других тестовых фреймворков нет.
-
-### Результат недели
-
-**После занятия 1:** B-01…B-04 — карта, одно судно без движения, карточка; ручная проверка выполнена; checkpoint 01: запись, коммит, архив.
-
-**После занятия 2:** B-05…B-07 — три судна движутся и останавливаются, карточка обновляется, тесты выбора проходят; checkpoint 02: запись, коммит, архив.
-
-Движение на этой неделе проверяется визуально; автоматическая проверка движения с управляемым временем — задача релиза R3, и в записи checkpoint это так и записывается.
-
-### Пример ожидаемого поведения
-
-Судно `demo-1` с маршрутом из 10 точек. Через 18 секунд после открытия страницы оно на последней точке; через 30 секунд — там же, в карточке скорость `0 уз`, курс и время последнего шага. Карточка `demo-1`, открытая на 5-й секунде, к 18-й секунде показывает координаты последней точки.
+This document consists of two parts: **what we are doing** — backlog tasks with acceptance criteria, and **how we work with Claude Code** — the method for working on these tasks.
 
 ---
 
-## Часть B. Как делаем с Claude Code
+## Part A. What We Are Doing
 
-Здесь «мы» — тот, кто ведёт агента: на занятии это ментор, при повторении в своей копии — вы.
+### Agreed Values
 
-### Метод недели
+The customer left the choices to the implementer; the following have been selected, with each value living in one place in the configuration.
 
-Первая неделя — чётко поставленная задача с коротким полным циклом: `задача → исследование → решение → изменение → проверка → diff → следующий шаг`. Каждая задача backlog — один-два запроса агенту. В каждом запросе три обязательных элемента:
+- **Stack:** Node.js 24, TypeScript 6.x (`strict`), Next.js (App Router) + React, Leaflet 1.9.x (mapping library), OpenStreetMap Standard layer (`https://tile.openstreetmap.org/{z}/{x}/{y}.png` — map tiles, image tiles; attribution “© OpenStreetMap contributors”), Playwright Test as the only test runner. Leaflet is loaded only on the client.
+- **Area:** Strait of Dover, rectangle from 50.75° N, 0.95° E to 51.25° N, 1.95° E. Initial view: center 51.00° N, 1.45° E, zoom 10.
+- **Vessel** — one structure for demonstration and real vessels: `id` (string; for demonstration `demo-1`…`demo-3`), `name` (string or `null`; empty string → `null`), `lat`, `lon`, `speedKnots` (number or `null`), `courseDeg` (number in [0, 360) or `null`; course over ground, not bow direction), `timestamp` (ISO 8601 with timezone), `source` (`'demo'` | `'aisstream'`). Zero and `null` are different.
+- **Card:** identifier; name as text, not HTML; coordinates via `toFixed(5)` with trailing zeroes (`51.00000, 1.45678`); speed rounded to tenths without trailing zeroes and with suffix (`12.3 kn`, `12 kn`, `0 kn`); course `Math.round % 360` with degree symbol (`135°`); message time `12:00:00 UTC`; source (“Demonstration data” / “AISStream”). Unknown value — “No data”. No close button: the card closes only when another vessel is selected; clicking again or clicking the map does not change the selection. Panel order from top to bottom: button (added later), source label, card.
+- **Icon:** oriented by `courseDeg`; for `null` — neutral circle. Attributes `data-vessel-id="<id>"` and `data-icon="course"|"neutral"` — tests locate vessels only by these.
+- **Demonstration:** three vessels “Demo Vessel 1”…“Demo Vessel 3”; each has 8–12 route points inside the area and a speed in knots — as literals; tick `DEMO_TICK_MS = 2000`; course — initial bearing of the great-circle segment (at start — to the second point, then from the previous point to the current one); step time — actual browser time, at start — the timer start moment; on the same tick the vessel reaches the last point, speed becomes `0`, and the vessel no longer changes; after page refresh — from the beginning. No pause, rewind, or looping. Check the name `<b>Demo</b>` using a temporary configuration edit, not committed.
+- **Source label:** “Demonstration data”.
+- **Run:** `http://localhost:3000`, loopback only.
 
-- **границы** — что не трогать и какие функции не добавлять (на этой неделе: никаких заготовок под сервер, кнопку, настоящие данные);
-- **критерий проверки** — как убедимся, что готово;
-- **ссылка на задание** — агент читает `docs/tasks/SPRINT-01.md`, а не пересказ.
+### Tasks
 
-### Порядок работы
+**B-01. Application scaffold.** Next.js + React + TypeScript strict in an empty folder, startup, Git with `.gitignore` for Node/Next, lockfile. Criterion: `npm run dev` opens the start page; no unnecessary dependencies.
 
-**До первого Edit.** Агент читает `PROJECT_BRIEF.md` и этот файл и предлагает план B-01…B-04 без правок. Проверяем план на лишнее: create-next-app с примерами, папки «на будущее», вторая библиотека карт. Только потом — реализация.
+**B-02. Area map.** Leaflet on the client only, OSM layer with attribution, area and initial view from configuration, map fills all available space. Criterion: direct page load and refresh work; resizing the window redraws the map without artifacts; `next build` passes.
 
-**Каркас (B-01).** Один запрос: минимальный проект, Git, `.gitignore`, короткий `CLAUDE.md` со стеком, командами запуска, границами недели и правилом «секреты не читать и не выводить». В `CLAUDE.md` нет будущих требований.
+**B-03. Vessel and icon.** Vessel structure, one demonstration vessel inside the area, icon based on course, neutral for `null`, label “Demonstration data”. Criterion: vessel is visible in the area, icon is oriented.
 
-**Карта (B-02).** Ловушка недели: Leaflet обращается к `window` и ломает серверный рендеринг и сборку. Требуем от агента клиентское подключение и прогон `next build` как критерий. Вторая ловушка — не подключён CSS Leaflet или контейнер без высоты: карта серая или разъезжается. Проверяем глазами после каждого изменения.
+**B-04. Selection and card.** Clicking a vessel opens a card in the format above; icon attributes. Criterion: card corresponds to the selected `id`; clicking again does not close it; name `<b>Demo</b>` is displayed as characters, not in bold.
 
-**Судно и карточка (B-03, B-04).** Структуру судна задаём полями, а не описанием — иначе агент придумает свою. Форматы карточки — литералами из части A. Проверка «имя как текст» — руками: судно с именем `<b>Демо</b>`.
+**B-05. Three vessels with routes.** `demo-1`…`demo-3`, 8–12 points each and each speed, as literals. Criterion: three vessels in the area.
 
-**Движение (B-05, B-06).** Сначала данные (маршруты литералами), потом движение. Требуем один тик на все суда, очистку таймера при уходе со страницы и обновление карточки из того же состояния, что и карта. Проверка накопления таймеров: счётчик тиков в консоли после hot reload.
+**B-06. Movement and stopping.** Tick every 2000 ms, course — segment bearing, selected vessel card updates, stop at the last point with speed `0` on that same tick; timers do not accumulate on rerenders and are cleared when leaving the page. Criterion: manual check — movement and stopping are visible; after hot reload, one tick per interval in the console, not two.
 
-**Тесты (B-07).** Установку браузера Playwright запускаем в фоне — она долгая. Тесты выбора не проверяют движение — так и записывается в checkpoint. Тайлы блокируем, иначе тест зависит от сети. Суда ищем только по `data-vessel-id`.
+**B-07. Test runner and selection tests.** Playwright Test with one browser, dev server launched from configuration; browser tests: three elements with `data-vessel-id` on the page; clicking a vessel opens a card with its `id`; clicking again does not close it; tile requests are blocked. Criterion: tests pass; no other test frameworks.
 
-**Review.** После каждой задачи: «покажи diff, сопоставь с заданием, код не меняй». Diff читаем сами. Решение фиксируется явно: принять, вернуть, остановиться.
+### Week Deliverables
 
-**Checkpoint.** После решения о приёмке агент записывает `docs/checkpoints/CHECKPOINT-0N.md` по шаблону из репозитория и делает коммит; архив этого коммита — шаг публикации на занятии, при повторении в своей копии он не нужен. В записи — только факты: как запустить, что сделано, какие команды выполнены и с каким результатом, что проверено визуально, что осталось.
+**After session 1:** B-01…B-04 — map, one stationary vessel, card; manual check completed; checkpoint 01: record, commit, archive.
 
-### Примеры запросов
+**After session 2:** B-05…B-07 — three vessels move and stop, card updates, selection tests pass; checkpoint 02: record, commit, archive.
 
-Формулировки — ориентир, не скрипт.
+Movement this week is checked visually; automated movement checks with controlled time are a Release R3 task, and the checkpoint record states that as such.
 
-- «Прочитай docs/tasks/PROJECT_BRIEF.md и docs/tasks/SPRINT-01.md. Предложи план задач B-01…B-04 и критерии проверки. Файлы не редактируй, будущие задачи не проектируй.»
-- «Подключи Leaflet только на клиенте, слой OpenStreetMap Standard с атрибуцией, район и начальный вид из SPRINT-01 в одном файле конфигурации. Карта на всю доступную область, корректна при обновлении страницы и изменении размера окна. Проверь next build.»
-- «Добавь движение: каждые 2000 мс судно переходит к следующей точке, курс — направление от предыдущей точки к текущей. В конце маршрута судно стоит. Таймеры не накапливаются при перерисовках. Паузу, перемотку и зацикливание не добавляй.»
-- «Покажи diff с фокусом на таймерах и обновлении выбранного судна. Отдели проверенное тестом от проверенного визуально. Код не меняй.»
+### Example of Expected Behavior
 
-### Что вы должны понять к концу недели
+Vessel `demo-1` has a 10-point route. 18 seconds after the page opens, it is at the last point; after 30 seconds it is still there, with speed `0 kn`, course, and the time of the last step in the card. The `demo-1` card opened at second 5 shows the coordinates of the last point by second 18.
 
-- Почему Leaflet подключён только на клиенте и что случилось бы иначе.
-- Где живёт состояние судов и почему карта и карточка читают из одного места.
-- Почему «Нет данных» и «0 уз» различаются с первой версии.
-- Что доказывают тесты выбора и чего не доказывают.
+---
 
-### Nice to have между занятиями
+## Part B. How We Work with Claude Code
 
-- Скачать checkpoint 01, запустить, повторить путь до карточки в своей копии.
-- Добавить четвёртое демонстрационное судно с собственным маршрутом.
-- Сломать очистку таймера и увидеть последствия в консоли.
-- Попросить свежую сессию Claude Code прочитать diff checkpoint 02 и назвать, что в нём не проверено тестами.
+Here, “we” means whoever is guiding the agent: during the session, the mentor; when repeating this in your own copy, you.
+
+### Method for the Week
+
+Week one is a clearly scoped task with a short complete cycle: `task → research → decision → change → verification → diff → next step`. Each backlog task is one or two prompts to the agent. Each prompt has three required elements:
+
+- **boundaries** — what not to touch and what functions not to add (this week: no scaffolding for a server, button, or real data);
+- **verification criterion** — how we will know it is done;
+- **task reference** — the agent reads `docs/tasks/SPRINT-01.md`, not a paraphrase.
+
+### Work Order
+
+**Before the first Edit.** The agent reads `PROJECT_BRIEF.md` and this file and proposes a plan for B-01…B-04 without edits. Check the plan for extras: create-next-app examples, “future” folders, a second mapping library. Only then — implementation.
+
+**Scaffold (B-01).** One prompt: minimal project, Git, `.gitignore`, concise `CLAUDE.md` with stack, run commands, weekly boundaries, and the rule “do not read or print secrets”. No future requirements in `CLAUDE.md`.
+
+**Map (B-02).** The week's pitfall: Leaflet accesses `window` and breaks server rendering and the build. Require client-side loading and a `next build` run as a criterion. Second pitfall — Leaflet CSS is not imported or the container has no height: the map is gray or misaligned. Check visually after every change.
+
+**Vessel and card (B-03, B-04).** Specify the vessel structure as fields, not a description — otherwise the agent will invent its own. Card formats are literals from Part A. Check “name as text” manually: vessel named `<b>Demo</b>`.
+
+**Movement (B-05, B-06).** First data (routes as literals), then movement. Require one tick for all vessels, timer cleanup when leaving the page, and card updates from the same state as the map. To check timer accumulation: tick counter in the console after hot reload.
+
+**Tests (B-07).** Start Playwright browser installation in the background — it takes a long time. Selection tests do not check movement — record that in the checkpoint. Block tiles, otherwise the test depends on the network. Find vessels only by `data-vessel-id`.
+
+**Review.** After each task: “show the diff, compare it with the task, do not change code”. Read the diff ourselves. The decision is recorded explicitly: accept, return, or stop.
+
+**Checkpoint.** After the acceptance decision, the agent writes `docs/checkpoints/CHECKPOINT-0N.md` using the repository template and makes a commit; archiving that commit is the publication step during the session, but is not needed when repeating this in your own copy. The record contains facts only: how to run it, what was done, which commands were run and with what result, what was checked visually, and what remains.
+
+### Example Prompts
+
+These phrasings are guidelines, not a script.
+
+- “Read docs/tasks/PROJECT_BRIEF.md and docs/tasks/SPRINT-01.md. Propose a plan for tasks B-01…B-04 and verification criteria. Do not edit files or design future tasks.”
+- “Load Leaflet on the client only, with the OpenStreetMap Standard layer and attribution, and put the area and initial view from SPRINT-01 in one configuration file. The map should fill all available space and remain correct on page refresh and window resizing. Check next build.”
+- “Add movement: every 2000 ms the vessel moves to the next point; course is the direction from the previous point to the current point. At the end of the route, the vessel stays still. Timers do not accumulate on rerenders. Do not add pause, rewind, or looping.”
+- “Show the diff with a focus on timers and updating the selected vessel. Separate what was verified by tests from what was checked visually. Do not change code.”
+
+### What You Should Understand by the End of the Week
+
+- Why Leaflet is loaded only on the client and what would happen otherwise.
+- Where vessel state lives and why the map and card read from the same place.
+- Why “No data” and “0 kn” have been different since the first version.
+- What selection tests prove and what they do not prove.
+
+### Nice to Have Between Sessions
+
+- Download checkpoint 01, run it, and repeat the path to the card in your own copy.
+- Add a fourth demonstration vessel with its own route.
+- Break timer cleanup and see the consequences in the console.
+- Ask a fresh Claude Code session to read the checkpoint 02 diff and say what it does not verify with tests.
