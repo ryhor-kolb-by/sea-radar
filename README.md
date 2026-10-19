@@ -1,5 +1,7 @@
 # Sea Radar
 
+[![CI](https://github.com/ryhor-kolb-by/sea-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/ryhor-kolb-by/sea-radar/actions/workflows/ci.yml)
+
 Educational web application: a map of the Strait of Dover and vessels on it. Runs locally on a single computer.
 
 ## About this project
