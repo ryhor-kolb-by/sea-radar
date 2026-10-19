@@ -5,5 +5,42 @@
       "Read(./.env.local)",
       "Read(./.env.*.local)"
     ]
-  }
+  },
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -NoLogo -File .claude/hooks/permission-beep.ps1",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -NoLogo -File .claude/hooks/permission-beep.ps1",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -NoLogo -File .claude/hooks/complete-beep.ps1",
+            "statusMessage": "🔔",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {}
 }
