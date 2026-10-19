@@ -40,4 +40,4 @@ The vessel is real (MMSI 538002013, “BERN”); the data is public — AIS broa
 
 7. **The `Timestamp` field inside `PositionReport`** (here `58`) is the AIS timestamp second, not the message time. The message time is `MetaData.time_utc`; they must not be confused.
 
-8. **Subscription confirmation.** SPRINT-02 says the source does not send it; the documentation says it does (`SubscriptionConfirmation`, without `MetaData`). The reader skips all frames whose `MessageType` is not `PositionReport`, so a service frame could not have appeared in the sample. The discrepancy between the task and documentation remains an open question.
+8. **Subscription confirmation.** SPRINT-02 says the source does not send it; the documentation says it does (`SubscriptionConfirmation`, without `MetaData`). No service frame appeared in this sample, but the reader does not actually check `MessageType` before converting a frame — see the known issue in [`FINAL_AUDIT.md`](../../FINAL_AUDIT.md#confirmed-discrepancy). The discrepancy between the task and documentation remains an open question.
