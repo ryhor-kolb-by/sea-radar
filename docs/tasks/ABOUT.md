@@ -26,7 +26,7 @@ The project is divided into three sprints—one sprint per week, with two webina
 
 **Sprint files:** `SPRINT-01.md`—at the first webinar, `SPRINT-02.md`—at the third, `SPRINT-03.md`—at the fifth, `SPRINT-03b-CHANGE-REQUEST.md`—at the sixth.
 
-Yes, the files arrive in installments, and that's intentional: decisions during the webinar are made without knowing future requirements—just as in real development. You can ask “what happens next,” but I won't answer before the time comes. The same files are in the project repository under `docs/tasks/`—the agent reads them from there; the checkpoint entry template is in `docs/checkpoints/TEMPLATE.md`.
+Yes, the files arrive in installments, and that's intentional: decisions during the webinar are made without knowing future requirements—just as in real development. You can ask “what happens next,” but I won't answer before the time comes. The same files are in the project repository under `docs/tasks/`—the agent reads them from there; the checkpoint entry template is in `docs/checkpoints/CHECKPOINT_TEMPLATE.md`.
 
 The work is divided into four releases, R1–R4—versions that the client can run and see for themselves; sprints 1 and 2 each produce one release, while sprint 3 produces two. Tasks within releases are numbered B-01…B-21: these numbers make them easy to find in the sprint files.
 
