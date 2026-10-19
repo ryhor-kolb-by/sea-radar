@@ -1,10 +1,10 @@
 ---
 name: git-commit
-description: "Делает git commit: разбирает diff, выбирает type и scope по Conventional Commits и пишет сообщение."
+description: "Makes a git commit: analyzes the diff, picks the type and scope per Conventional Commits, and writes the message."
 disable-model-invocation: true
-when_to_use: Когда нужно сделать commit или вызвать /git-commit.
-arguments: Подсказка type — один из feat|fix|refactor|test|docs|chore|style|perf.
-          Skill сверяет подсказку с реальным diff.
+when_to_use: When you need to make a commit or invoke /git-commit.
+arguments: Type hint — one of feat|fix|refactor|test|docs|chore|style|perf.
+          The skill checks the hint against the actual diff.
 allowed_tools:
   - bash(git:status)
   - bash(git:diff*)
@@ -14,92 +14,92 @@ allowed_tools:
 
 # git-commit
 
-Проверяет изменения, выбирает один логический набор, создаёт Conventional
-Commit, возвращает hash, message и список committed files.
+Reviews the changes, picks one logical change set, creates a Conventional
+Commit, and returns the hash, message, and list of committed files.
 
 ## Best Practices
 
-- **Один коммит — одна задача.** Если в изменениях смешаны
-  разнородные правки — попроси пользователя разделить их вручную.
-- **Сообщение — ответ на вопрос «что этот коммит делает».**
-  Формулируй в imperative: «add validation», а не «added» или «adds».
-- **Сообщение до 72 символов.** Если нужно больше — пустая строка
-  и bullet points в теле.
-- **Scope — только когда он очевиден.** Если затронуто два
-  несвязанных модуля — лучше опустить scope, чем врать.
+- **One commit — one task.** If the changes mix unrelated edits,
+  ask the user to split them manually.
+- **The message answers "what does this commit do".**
+  Write it in the imperative: "add validation", not "added" or "adds".
+- **Message up to 72 characters.** If you need more — a blank line
+  and bullet points in the body.
+- **Scope only when it is obvious.** If two unrelated modules are
+  affected, it is better to omit the scope than to mislead.
 
 ## Git Safety Protocol
 
-Не продолжай, если:
+Do not proceed if:
 
-- **staged и unstaged пусты** — нечего коммитить.
-- **В diff есть `.env`, `*.pem`, `*.key` или другой секрет** —
-  остановись до выполнения `git commit`. Перечисли опасные файлы.
-- **Изменения нельзя сгруппировать в один логический набор** —
-  покажи файлы и попроси пользователя сделать `git add` самому.
-- **Hook вернул ошибку** — покажи вывод и остановись.
+- **staged and unstaged are both empty** — nothing to commit.
+- **The diff contains `.env`, `*.pem`, `*.key`, or another secret** —
+  stop before running `git commit`. List the dangerous files.
+- **The changes cannot be grouped into one logical set** —
+  show the files and ask the user to run `git add` themselves.
+- **A hook returned an error** — show the output and stop.
 
-## Процесс
+## Process
 
-1. **Покажи текущее состояние Git:**
-   - Выполни `git status` и покажи пользователю:
-     - список staged файлов
-     - список unstaged файлов
-     - конфликты (если есть)
-   - **Не подставляй diff на этом шаге** — только имена файлов
+1. **Show the current Git state:**
+   - Run `git status` and show the user:
+     - the list of staged files
+     - the list of unstaged files
+     - conflicts (if any)
+   - **Do not show the diff at this step** — file names only
 
-2. **Если изменений нет** — остановись с сообщением «Nothing to commit».
+2. **If there are no changes** — stop with the message "Nothing to commit".
 
-3. **Проверь чувствительные пути** до чтения diff и staging:
-   - Если среди изменённых файлов есть `.env`, `*.pem`, `*.key` или
-     другой чувствительный/секретный файл — остановись и объясни,
-     что найден потенциальный секрет, перечисли пути.
+3. **Check sensitive paths** before reading the diff and staging:
+   - If the changed files include `.env`, `*.pem`, `*.key`, or
+     another sensitive/secret file — stop and explain that
+     a potential secret was found, and list the paths.
 
-4. **Прочитай разрешённый diff и выдели один change set:**
-   - `git diff --cached` — staged изменения (приоритет)
-   - `git diff` — unstaged изменения
-   - Определи, образуют ли изменения один логический набор (одна задача,
-     один модуль, один слой)
+4. **Read the allowed diff and identify one change set:**
+   - `git diff --cached` — staged changes (priority)
+   - `git diff` — unstaged changes
+   - Determine whether the changes form one logical set (one task,
+     one module, one layer)
 
-5. **Если изменения нельзя безопасно разделить** на один change set —
-   остановись, покажи список файлов и попроси пользователя вручную
-   выбрать файлы через `git add <file>`.
+5. **If the changes cannot be safely separated** into one change set —
+   stop, show the list of files, and ask the user to select
+   the files manually via `git add <file>`.
 
-   Если набор определён однозначно — застейдж только файлы этого
-   набора: `git add <file1> <file2> ...` (никогда `git add .` или `-A`).
+   If the set is clearly defined — stage only the files of that
+   set: `git add <file1> <file2> ...` (never `git add .` or `-A`).
 
-6. **Выбери type** — если передан аргумент (например, `/git-commit docs`),
-   проверь, что подсказка соответствует реальному diff. Если не совпадает —
-   объясни расхождение и выбери корректный type. Если аргумента нет —
-   определи type по diff самостоятельно:
+6. **Choose the type** — if an argument is passed (for example, `/git-commit docs`),
+   check that the hint matches the actual diff. If it does not match —
+   explain the discrepancy and choose the correct type. If there is no argument —
+   determine the type from the diff yourself:
 
-   | Тип | Когда использовать |
-   |-----|-------------------|
-   | `feat` | Новая функциональность |
-   | `fix` | Исправление бага |
-   | `refactor` | Рефакторинг без изменения поведения |
-   | `test` | Добавление или правка тестов |
-   | `docs` | Документация, README, комментарии |
-   | `chore` | Служебные изменения (build, CI, конфиги, gitignore, hooks) |
-   | `style` | Форматирование, отступы, точки с запятой |
-   | `perf` | Оптимизация производительности |
+   | Type | When to use |
+   |------|-------------|
+   | `feat` | New functionality |
+   | `fix` | Bug fix |
+   | `refactor` | Refactoring without behavior change |
+   | `test` | Adding or changing tests |
+   | `docs` | Documentation, README, comments |
+   | `chore` | Maintenance changes (build, CI, configs, gitignore, hooks) |
+   | `style` | Formatting, indentation, semicolons |
+   | `perf` | Performance optimization |
 
-7. **Определи scope** — модуль/слой из имени файла/папки (например,
-   `refund`, `auth`, `config`). Если затронуто несколько модулей —
-   scope можно опустить.
+7. **Determine the scope** — the module/layer from the file/folder name (for example,
+   `refund`, `auth`, `config`). If several modules are affected —
+   the scope may be omitted.
 
-8. **Составь сообщение:** `type(scope): краткое описание в imperative mood`
-   - Без точки в конце
-   - До 72 символов в первой строке
-   - Если изменений много — после пустой строки добавь bullet points
+8. **Compose the message:** `type(scope): short description in imperative mood`
+   - No trailing period
+   - Up to 72 characters on the first line
+   - If there are many changes — add bullet points after a blank line
 
-9. **Создай Conventional Commit:**
-   - `git commit -m "..."` (только staged)
-   - Если hook завершился ошибкой — покажи её вывод и остановись
+9. **Create the Conventional Commit:**
+   - `git commit -m "..."` (staged only)
+   - If a hook failed — show its output and stop
 
 ## Result
 
-После успешного commit верни:
+After a successful commit, return:
 
 ```
 Hash:        <commit hash>
@@ -111,10 +111,10 @@ Uncommitted: <file3>
              <file4>
 ```
 
-`Uncommitted` — изменения, которые остались незакоммиченными (unstaged
-или файлы, не вошедшие в change set).
+`Uncommitted` — changes that remain uncommitted (unstaged
+or files not included in the change set).
 
-## Пример
+## Example
 
 ```
 Hash:        a1b2c3d4e5f6...
@@ -126,9 +126,9 @@ Uncommitted: src/.../RefundController.java
 
 ## Constraints
 
-- **Запрещённые операции** — во время работы skill недоступны:
-  - `git push` — только локальный коммит
-  - `git commit --amend` — только новый коммит
-  - `git commit --no-verify` / `-n` — хуки должны отработать
-  - `git config` — изменение конфигурации Git
-- **Нет staged** — не коммитить, только предупредить
+- **Forbidden operations** — unavailable while the skill runs:
+  - `git push` — local commit only
+  - `git commit --amend` — new commits only
+  - `git commit --no-verify` / `-n` — hooks must run
+  - `git config` — changing Git configuration
+- **Nothing staged** — do not commit, only warn
