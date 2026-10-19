@@ -10,6 +10,16 @@ This project was built as part of the "Claude AI Native Developer" course (see `
 
 Customer brief: `docs/tasks/PROJECT_BRIEF.md`.
 
+## Screenshots
+
+Map with demo vessels:
+
+![Map with demo vessels](docs/screenshots/map_overview.png)
+
+Vessel card with data loaded from AISStream:
+
+![Vessel card](docs/screenshots/vessel_card.png)
+
 ## Requirements
 
 Node.js 24 or later, npm. Developed and tested against Node.js 24; the build and test suite also pass on Node.js v25.8.1.
